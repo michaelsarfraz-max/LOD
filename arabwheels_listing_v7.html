@@ -1,0 +1,2865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ArabWheels Listing Post Generator — v3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&family=Roboto:wght@400;500;700;900&family=Poppins:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;700&family=Oswald:wght@400;500;600;700&family=Anton&family=Barlow+Condensed:wght@400;600;700;800&family=Roboto+Condensed:wght@400;700&family=Cairo:wght@400;600;700;900&family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+
+/* =========================================================================
+   TOKENS
+   ========================================================================= */
+:root {
+  /* OFFICIAL BRAND PALETTE */
+  --aw-navy: #29437d;
+  --aw-navy-deep: #1d3260;
+  --aw-ice: #E7F1FF;
+  --aw-gray: #F0F0F0;
+
+  /* ACCENT — JS-controlled */
+  --accent-light: #19B5FF;
+  --accent-mid: #0091D8;
+  --accent-dark: #00669C;
+  --accent-gradient: linear-gradient(135deg, var(--accent-light) 0%, var(--accent-mid) 50%, var(--accent-dark) 100%);
+  --accent-glow: 0 8px 24px rgba(0, 145, 216, 0.4), inset 0 1px 0 rgba(255,255,255,0.3);
+
+  /* NEUTRALS */
+  --ink: #0E1726;
+  --ink-soft: #475467;
+  --ink-mute: #98A2B3;
+  --line: #E5E8EE;
+  --white: #FFFFFF;
+
+  /* EDITOR */
+  --editor-bg: #F4F6FA;
+  --editor-border: #E1E5EC;
+
+  /* FONTS — JS controlled */
+  --font-body: 'Manrope', system-ui, sans-serif;
+  --font-display: 'Bebas Neue', sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--editor-bg);
+  font-family: 'Manrope', system-ui, sans-serif;
+  color: var(--ink);
+}
+
+.hidden { display: none !important; }
+
+/* =========================================================================
+   APP HEADER
+   ========================================================================= */
+.app-header {
+  background: var(--white);
+  border-bottom: 1px solid var(--editor-border);
+  padding: 14px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.app-title { display: flex; align-items: center; gap: 14px; }
+
+.app-title .mini-logo {
+  width: 38px; height: 38px;
+  color: var(--aw-navy);
+  display: flex; align-items: center; justify-content: center;
+  background: var(--aw-ice);
+  border-radius: 8px;
+}
+
+.app-title h1 {
+  margin: 0; font-size: 17px; font-weight: 800;
+  letter-spacing: -0.02em; color: var(--ink);
+}
+
+.app-title .subtitle { margin: 2px 0 0; font-size: 11px; color: var(--ink-soft); font-weight: 500; }
+
+.app-actions { display: flex; gap: 10px; align-items: center; }
+
+.btn {
+  padding: 11px 18px;
+  border-radius: 9px;
+  font-family: 'Manrope', sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  transition: transform 0.12s, box-shadow 0.12s;
+  white-space: nowrap;
+}
+
+.btn:hover { transform: translateY(-1px); }
+.btn:disabled { opacity: 0.55; cursor: wait; transform: none; }
+
+.btn-primary {
+  background: var(--accent-gradient);
+  color: white;
+  box-shadow: var(--accent-glow);
+}
+
+.btn-secondary {
+  background: var(--aw-navy);
+  color: white;
+}
+
+.btn-ghost {
+  background: var(--white);
+  color: var(--aw-navy);
+  border: 1px solid var(--editor-border);
+}
+
+/* =========================================================================
+   WORKSPACE
+   ========================================================================= */
+.workspace {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  min-height: calc(100vh - 65px);
+}
+
+/* =========================================================================
+   FORM PANEL
+   ========================================================================= */
+.form-panel {
+  background: var(--white);
+  border-right: 1px solid var(--editor-border);
+  padding: 22px;
+  overflow-y: auto;
+  max-height: calc(100vh - 65px);
+}
+
+.form-section {
+  margin-bottom: 22px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid var(--editor-border);
+}
+.form-section:last-child { border-bottom: none; padding-bottom: 0; }
+
+.section-label {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--ink-mute);
+  margin: 0 0 12px;
+  display: flex; align-items: center; gap: 8px;
+}
+.section-label::before {
+  content: ''; width: 4px; height: 4px; border-radius: 50%;
+  background: var(--accent-mid);
+}
+
+.field { margin-bottom: 10px; }
+.field label {
+  display: block; font-size: 12px; font-weight: 600;
+  color: var(--ink-soft); margin-bottom: 5px;
+}
+
+.field input,
+.field select {
+  width: 100%; padding: 9px 11px;
+  border: 1px solid var(--editor-border); border-radius: 7px;
+  font-family: 'Manrope', sans-serif; font-size: 13px;
+  color: var(--ink); background: var(--white);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.field input:focus,
+.field select:focus {
+  outline: none; border-color: var(--accent-mid);
+  box-shadow: 0 0 0 3px rgba(0, 145, 216, 0.12);
+}
+
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+
+/* URL fetch group */
+.url-fetch-group {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: stretch;
+}
+.url-fetch-group input { padding: 10px 12px; }
+.url-fetch-group .btn { padding: 0 16px; font-size: 12px; }
+
+.fetch-status {
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--ink-soft);
+  display: none;
+}
+.fetch-status.show { display: block; }
+.fetch-status.success { color: #047857; }
+.fetch-status.error { color: #b91c1c; }
+
+/* color picker row */
+.color-picker-row {
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  gap: 10px;
+  align-items: center;
+}
+.color-picker-row input[type="color"] {
+  height: 40px; padding: 0; border: 1px solid var(--editor-border);
+  border-radius: 7px; cursor: pointer; background: transparent;
+}
+
+/* hex-first accent row */
+.hex-row {
+  display: grid;
+  grid-template-columns: 1fr 44px;
+  gap: 8px;
+  align-items: stretch;
+}
+.hex-row input[type="text"] {
+  padding: 10px 12px;
+  border: 1px solid var(--editor-border); border-radius: 7px;
+  font-family: 'SF Mono', ui-monospace, Menlo, monospace;
+  font-size: 13px;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.hex-row input[type="text"]:focus {
+  outline: none; border-color: var(--accent-mid);
+  box-shadow: 0 0 0 3px rgba(0, 145, 216, 0.12);
+}
+.hex-row input[type="color"] {
+  width: 44px; height: 40px; padding: 0;
+  border: 1px solid var(--editor-border); border-radius: 7px;
+  cursor: pointer; background: transparent;
+}
+
+/* image upload tabs */
+.image-tabs {
+  display: flex; gap: 4px; background: var(--editor-bg);
+  padding: 3px; border-radius: 7px; margin-bottom: 9px;
+}
+.image-tab {
+  flex: 1; padding: 6px 8px; background: transparent;
+  border: none; border-radius: 5px;
+  font-family: 'Manrope', sans-serif; font-size: 11px;
+  font-weight: 600; color: var(--ink-soft); cursor: pointer;
+}
+.image-tab.active { background: var(--white); color: var(--aw-navy); box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+
+.image-input-area { display: none; }
+.image-input-area.active { display: block; }
+
+.file-drop {
+  border: 2px dashed var(--editor-border); border-radius: 9px;
+  padding: 16px; text-align: center; cursor: pointer;
+  background: var(--editor-bg); transition: all 0.15s;
+  display: block;
+}
+.file-drop:hover { border-color: var(--accent-mid); background: var(--aw-ice); }
+.file-drop.dragover { border-color: var(--accent-mid); background: var(--aw-ice); }
+.file-drop p { margin: 6px 0 0; font-size: 11px; color: var(--ink-soft); }
+.file-drop strong { color: var(--aw-navy); }
+.file-drop input[type="file"] { display: none; }
+
+.checkbox-field {
+  display: flex; align-items: center; gap: 8px; padding: 6px 0;
+}
+.checkbox-field input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent-mid); cursor: pointer; }
+.checkbox-field label { margin: 0; cursor: pointer; font-size: 13px; color: var(--ink); font-weight: 500; }
+
+.slider-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: center;
+  margin-top: 8px;
+}
+.slider-row input[type="range"] {
+  width: 100%; accent-color: var(--accent-mid);
+}
+.slider-row .value {
+  font-size: 11px; font-weight: 600; color: var(--aw-navy);
+  min-width: 32px; text-align: right;
+}
+
+.small-note {
+  font-size: 10px; color: var(--ink-mute); margin: 4px 0 0;
+  line-height: 1.4;
+}
+
+.link-btn {
+  background: none; border: none; color: var(--accent-mid);
+  cursor: pointer; padding: 0; font-size: 11px;
+  font-weight: 600; text-decoration: underline;
+}
+
+/* =========================================================================
+   PREVIEW PANEL
+   ========================================================================= */
+.preview-panel {
+  padding: 22px 28px 40px;
+  overflow: auto;
+  display: flex; flex-direction: column; align-items: center;
+  background:
+    radial-gradient(circle at 50% 30%, rgba(41, 67, 125, 0.04) 0%, transparent 60%),
+    var(--editor-bg);
+}
+
+.format-tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--white);
+  padding: 4px;
+  border-radius: 10px;
+  margin-bottom: 22px;
+  border: 1px solid var(--editor-border);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+}
+
+.format-tab {
+  padding: 9px 14px;
+  background: transparent;
+  border: none;
+  border-radius: 7px;
+  font-family: 'Manrope', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  transition: background 0.15s;
+}
+.format-tab .dim { font-size: 10px; opacity: 0.7; font-weight: 500; }
+
+.format-tab.active {
+  background: var(--aw-navy);
+  color: white;
+}
+.format-tab.active .dim { color: rgba(255,255,255,0.85); }
+.format-tab:not(.active):hover { background: var(--editor-bg); }
+
+.preview-stage {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+/* SCALED PREVIEW WRAPPER (size depends on format) */
+.preview-wrapper {
+  overflow: hidden;
+  border-radius: 18px;
+  box-shadow:
+    0 30px 80px rgba(15, 23, 42, 0.18),
+    0 8px 24px rgba(15, 23, 42, 0.08),
+    0 0 0 1px rgba(15, 23, 42, 0.04);
+  background: white;
+}
+.preview-wrapper.portrait { width: 432px; height: 540px; }
+.preview-wrapper.fb-portrait { width: 432px; height: 648px; }
+.preview-wrapper.square { width: 432px; height: 432px; }
+.preview-wrapper.landscape { width: 540px; height: 283.5px; }
+
+/* =========================================================================
+   COMMON CARD PRIMITIVES (shared across all 3 formats)
+   ========================================================================= */
+.card-base {
+  background: white;
+  font-family: var(--font-body);
+  color: var(--ink);
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.aw-mark { color: white; flex-shrink: 0; }
+.wordmark {
+  color: white;
+  font-family: var(--font-display);
+  letter-spacing: 0.1em;
+  line-height: 1;
+  padding-top: 4px;
+}
+
+.card-header {
+  background: var(--aw-navy);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.card-header::after {
+  content: '';
+  position: absolute; bottom: 0; left: 0; right: 0; height: 4px;
+  background: var(--accent-gradient);
+}
+
+.header-brand { display: flex; align-items: center; gap: 16px; }
+
+.hero {
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+  background: var(--aw-gray);
+  flex-shrink: 0;
+}
+
+.hero-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  background-position: center;
+  /* No CSS filter — image is pre-blurred via canvas (works in html2canvas) */
+  display: none;
+  z-index: 0;
+}
+
+.hero.blurred .hero-bg { display: block; }
+.hero.blurred .hero-img { object-fit: contain; z-index: 1; position: relative; }
+
+.hero-img {
+  width: 100%; height: 100%;
+  object-fit: cover; display: block;
+  position: relative;
+  z-index: 1;
+  /* Tell the browser to use highest-quality scaling */
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: high-quality;
+}
+
+.hero::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg, transparent 60%, rgba(0,0,0,0.4) 100%);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* CONDITION TAG */
+.condition-tag {
+  position: absolute;
+  background: var(--accent-gradient);
+  color: white;
+  font-weight: 800;
+  text-transform: uppercase;
+  z-index: 3;
+  border: 1px solid rgba(255,255,255,0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* DEALER BADGE */
+.dealer-badge {
+  position: absolute;
+  background: rgba(255,255,255,0.97);
+  backdrop-filter: blur(10px);
+  color: var(--aw-navy);
+  font-weight: 700;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.22);
+}
+
+.dealer-badge .dealer-logo-img {
+  border-radius: 50%;
+  background: white;
+  object-fit: contain;
+  padding: 4px;
+  flex-shrink: 0;
+  border: 2px solid white;
+}
+
+/* Logo-only mode: hide name span and SHOW BIGGER LOGO */
+.dealer-badge.logo-only .out-dealer-name { display: none; }
+.dealer-badge.logo-only { padding: 6px !important; gap: 0 !important; }
+/* Per-format logo-only sizes — much larger than the small "with name" sizes */
+.card-portrait    .dealer-badge.logo-only .dealer-logo-img { width: 100px; height: 100px; }
+.card-fb-portrait .dealer-badge.logo-only .dealer-logo-img { width: 120px; height: 120px; }
+.card-square      .dealer-badge.logo-only .dealer-logo-img { width: 92px;  height: 92px; }
+.card-landscape   .dealer-badge.logo-only .dealer-logo-img { width: 78px;  height: 78px; }
+
+.dealer-badge.no-logo::before {
+  content: '';
+  border-radius: 50%;
+  background: var(--accent-mid);
+  box-shadow: 0 0 10px var(--accent-mid);
+  flex-shrink: 0;
+}
+
+.make {
+  font-family: var(--font-display);
+  line-height: 1;
+  color: var(--aw-navy);
+  letter-spacing: 0.02em;
+  margin: 0;
+  text-transform: uppercase;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.model {
+  color: var(--ink-soft);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.location {
+  color: var(--ink-mute);
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.location svg { color: var(--accent-mid); flex-shrink: 0; }
+
+.price-pill {
+  background: var(--accent-gradient);
+  color: white;
+  border-radius: 100px;
+  box-shadow: var(--accent-glow);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1;
+  flex-shrink: 0;
+  border: 1px solid rgba(255,255,255,0.18);
+}
+
+.price-pill .currency {
+  font-weight: 600;
+  opacity: 0.9;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.price-pill .amount {
+  font-family: var(--font-display);
+  letter-spacing: 0.02em;
+}
+
+/* "Call for Price" mode — narrower, shorter pill since the text is shorter */
+.price-pill.call-mode .amount {
+  font-family: var(--font-body);
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.price-pill.call-mode .currency {
+  font-size: 0.85em;
+}
+
+.spec-pill {
+  flex: 1;
+  background: var(--aw-ice);
+  border-radius: 12px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border: 1px solid rgba(41, 67, 125, 0.08);
+}
+
+.spec-icon-wrap { color: var(--aw-navy); }
+.spec-icon-wrap svg { width: 100%; height: 100%; }
+
+.spec-text {
+  font-family: var(--font-display);
+  color: var(--aw-navy);
+  line-height: 1;
+  letter-spacing: 0.03em;
+}
+
+.cta {
+  background: var(--accent-gradient);
+  color: white;
+  border-radius: 100px;
+  text-align: center;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  box-shadow: var(--accent-glow);
+  border: 1px solid rgba(255,255,255,0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card-footer {
+  background: var(--aw-navy);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: white;
+  margin-top: auto;
+  position: relative;
+  flex-shrink: 0;
+}
+.card-footer::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent-mid), transparent);
+}
+
+.footer-left {
+  display: flex;
+  align-items: center;
+}
+
+.footer-left .download-text {
+  color: white;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.footer-left .store-badges { display: flex; align-items: center; }
+
+/* New simpler "row" style: just icon + name on the navy bg, no bordered box */
+.store-row {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.store-row .store-name {
+  color: white;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.store-row svg {
+  flex-shrink: 0;
+}
+
+.footer-right {
+  font-family: var(--font-display);
+  letter-spacing: 0.18em;
+  color: white;
+  text-transform: uppercase;
+  text-align: right;
+}
+.footer-right .dot { color: var(--accent-mid); margin: 0 6px; }
+
+/* =========================================================================
+   PORTRAIT (1080 × 1350) — Instagram & Facebook portrait
+   ========================================================================= */
+.card-portrait {
+  width: 1080px;
+  height: 1350px;
+  transform: scale(0.4);
+  transform-origin: top left;
+}
+.card-portrait .card-header { height: 120px; }
+.card-portrait .aw-mark { width: 56px; height: 56px; }
+.card-portrait .wordmark { font-size: 48px; }
+.card-portrait .hero { height: 720px; flex-shrink: 0; }
+.card-portrait .card-header { flex-shrink: 0; }
+.card-portrait .condition-tag {
+  top: 28px; left: 28px;
+  padding: 12px 22px;
+  border-radius: 8px;
+  font-size: 18px;
+  letter-spacing: 0.1em;
+  box-shadow: 0 8px 20px rgba(0, 145, 216, 0.4);
+}
+.card-portrait .dealer-badge {
+  bottom: 28px; right: 28px;
+  padding: 12px 22px 12px 12px;
+  border-radius: 100px;
+  font-size: 22px;
+  gap: 14px;
+}
+.card-portrait .dealer-badge.no-logo { padding-left: 22px; gap: 12px; }
+.card-portrait .dealer-badge.no-logo::before { width: 10px; height: 10px; }
+.card-portrait .dealer-badge .dealer-logo-img { width: 60px; height: 60px; }
+
+.card-portrait .info {
+  padding: 32px 56px 18px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+.card-portrait .info-left { flex: 1; min-width: 0; }
+.card-portrait .make { font-size: 60px; }
+.card-portrait .model { font-size: 28px; margin: 4px 0 0; }
+.card-portrait .location { font-size: 20px; margin: 12px 0 0; }
+.card-portrait .location svg { width: 16px; height: 16px; }
+.card-portrait .price-pill { padding: 16px 24px; }
+.card-portrait .price-pill .currency { font-size: 13px; margin-bottom: 3px; }
+.card-portrait .price-pill .amount { font-size: 40px; }
+.card-portrait .price-pill.call-mode .amount { font-size: 26px; }
+
+.card-portrait .specs {
+  display: flex;
+  gap: 12px;
+  padding: 8px 56px 22px;
+}
+.card-portrait .spec-pill {
+  padding: 14px 8px;
+  gap: 6px;
+}
+.card-portrait .spec-icon-wrap { width: 32px; height: 32px; }
+.card-portrait .spec-text { font-size: 22px; }
+
+.card-portrait .cta {
+  margin: 0 56px 22px;
+  padding: 22px;
+  font-size: 22px;
+  gap: 12px;
+}
+.card-portrait .cta svg { width: 20px; height: 20px; }
+
+.card-portrait .card-footer {
+  padding: 0 48px;
+  gap: 24px;
+  height: 100px;
+  flex-shrink: 0;
+}
+.card-portrait .footer-left { gap: 22px; }
+.card-portrait .footer-left .download-text { font-size: 22px; }
+.card-portrait .footer-left .store-badges { gap: 18px; }
+.card-portrait .store-row { gap: 8px; }
+.card-portrait .store-row svg.store-icon-apple { width: 22px; height: 28px; }
+.card-portrait .store-row svg.store-icon-gp { width: 26px; height: 26px; }
+.card-portrait .store-row .store-name { font-size: 18px; }
+.card-portrait .footer-right { font-size: 26px; }
+
+/* =========================================================================
+   FB PORTRAIT (1080 × 1620) — Facebook portrait, big hero for vertical car photos
+   ========================================================================= */
+.card-fb-portrait {
+  width: 1080px;
+  height: 1620px;
+  transform: scale(0.4);
+  transform-origin: top left;
+}
+.card-fb-portrait .card-header { height: 124px; flex-shrink: 0; }
+.card-fb-portrait .aw-mark { width: 60px; height: 60px; }
+.card-fb-portrait .wordmark { font-size: 52px; }
+.card-fb-portrait .hero { height: 900px; flex-shrink: 0; }
+.card-fb-portrait .condition-tag {
+  top: 32px; left: 32px;
+  padding: 14px 26px;
+  border-radius: 8px;
+  font-size: 20px;
+  letter-spacing: 0.1em;
+  box-shadow: 0 8px 20px rgba(0, 145, 216, 0.4);
+}
+.card-fb-portrait .dealer-badge {
+  bottom: 32px; right: 32px;
+  padding: 14px 26px 14px 14px;
+  border-radius: 100px;
+  font-size: 24px;
+  gap: 16px;
+}
+.card-fb-portrait .dealer-badge.no-logo { padding-left: 26px; gap: 14px; }
+.card-fb-portrait .dealer-badge.no-logo::before { width: 11px; height: 11px; }
+.card-fb-portrait .dealer-badge .dealer-logo-img { width: 68px; height: 68px; }
+
+.card-fb-portrait .info {
+  padding: 36px 60px 22px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 28px;
+}
+.card-fb-portrait .info-left { flex: 1; min-width: 0; }
+.card-fb-portrait .make { font-size: 68px; }
+.card-fb-portrait .model { font-size: 32px; margin: 6px 0 0; }
+.card-fb-portrait .location { font-size: 22px; margin: 14px 0 0; }
+.card-fb-portrait .location svg { width: 18px; height: 18px; }
+.card-fb-portrait .price-pill { padding: 18px 28px; }
+.card-fb-portrait .price-pill .currency { font-size: 14px; margin-bottom: 4px; }
+.card-fb-portrait .price-pill .amount { font-size: 46px; }
+.card-fb-portrait .price-pill.call-mode .amount { font-size: 30px; }
+
+.card-fb-portrait .specs {
+  display: flex;
+  gap: 14px;
+  padding: 10px 60px 26px;
+}
+.card-fb-portrait .spec-pill {
+  padding: 18px 8px;
+  gap: 8px;
+}
+.card-fb-portrait .spec-icon-wrap { width: 36px; height: 36px; }
+.card-fb-portrait .spec-text { font-size: 26px; }
+
+.card-fb-portrait .cta {
+  margin: 0 60px 26px;
+  padding: 26px;
+  font-size: 26px;
+  gap: 14px;
+}
+.card-fb-portrait .cta svg { width: 24px; height: 24px; }
+
+.card-fb-portrait .card-footer {
+  padding: 0 52px;
+  gap: 26px;
+  height: 116px;
+  flex-shrink: 0;
+}
+.card-fb-portrait .footer-left { gap: 18px; }
+.card-fb-portrait .footer-left .download-text { font-size: 22px; }
+.card-fb-portrait .footer-left .store-badges { gap: 16px; }
+.card-fb-portrait .store-row { gap: 8px; }
+.card-fb-portrait .store-row svg.store-icon-apple { width: 22px; height: 28px; }
+.card-fb-portrait .store-row svg.store-icon-gp { width: 26px; height: 26px; }
+.card-fb-portrait .store-row .store-name { font-size: 19px; }
+.card-fb-portrait .footer-right { font-size: 24px; letter-spacing: 0.14em; }
+
+/* =========================================================================
+   SQUARE (1080 × 1080) — Facebook feed
+   ========================================================================= */
+.card-square {
+  width: 1080px;
+  height: 1080px;
+  transform: scale(0.4);
+  transform-origin: top left;
+}
+.card-square .card-header { height: 110px; }
+.card-square .aw-mark { width: 50px; height: 50px; }
+.card-square .wordmark { font-size: 42px; }
+.card-square .hero { height: 510px; flex-shrink: 0; }
+.card-square .card-header { flex-shrink: 0; }
+.card-square .condition-tag {
+  top: 24px; left: 24px;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 16px;
+  letter-spacing: 0.1em;
+  box-shadow: 0 8px 20px rgba(0, 145, 216, 0.4);
+}
+.card-square .dealer-badge {
+  bottom: 26px; right: 26px;
+  padding: 11px 20px 11px 11px;
+  border-radius: 100px;
+  font-size: 20px;
+  gap: 12px;
+}
+.card-square .dealer-badge.no-logo { padding-left: 20px; gap: 10px; }
+.card-square .dealer-badge.no-logo::before { width: 9px; height: 9px; }
+.card-square .dealer-badge .dealer-logo-img { width: 54px; height: 54px; }
+
+.card-square .info {
+  padding: 22px 48px 14px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+.card-square .info-left { flex: 1; min-width: 0; }
+.card-square .make { font-size: 48px; }
+.card-square .model { font-size: 22px; margin: 3px 0 0; }
+.card-square .location { font-size: 18px; margin: 10px 0 0; }
+.card-square .location svg { width: 15px; height: 15px; }
+.card-square .price-pill { padding: 14px 20px; }
+.card-square .price-pill .currency { font-size: 12px; margin-bottom: 3px; }
+.card-square .price-pill .amount { font-size: 34px; }
+.card-square .price-pill.call-mode .amount { font-size: 22px; }
+
+.card-square .specs {
+  display: flex;
+  gap: 10px;
+  padding: 6px 48px 18px;
+}
+.card-square .spec-pill {
+  padding: 11px 6px;
+  gap: 5px;
+}
+.card-square .spec-icon-wrap { width: 26px; height: 26px; }
+.card-square .spec-text { font-size: 18px; }
+
+.card-square .cta {
+  margin: 0 48px 18px;
+  padding: 18px;
+  font-size: 19px;
+  gap: 10px;
+}
+.card-square .cta svg { width: 18px; height: 18px; }
+
+.card-square .card-footer {
+  padding: 0 44px;
+  gap: 22px;
+  height: 92px;
+  flex-shrink: 0;
+}
+.card-square .footer-left { gap: 20px; }
+.card-square .footer-left .download-text { font-size: 20px; }
+.card-square .footer-left .store-badges { gap: 18px; }
+.card-square .store-row { gap: 8px; }
+.card-square .store-row svg.store-icon-apple { width: 20px; height: 26px; }
+.card-square .store-row svg.store-icon-gp { width: 24px; height: 24px; }
+.card-square .store-row .store-name { font-size: 17px; }
+.card-square .footer-right { font-size: 24px; }
+
+/* =========================================================================
+   LANDSCAPE (1200 × 630) — Facebook link share
+   ========================================================================= */
+.card-landscape {
+  width: 1200px;
+  height: 630px;
+  transform: scale(0.45);
+  transform-origin: top left;
+  display: grid;
+  grid-template-rows: 64px minmax(0, 1fr) 80px;
+}
+.card-landscape .card-header { height: 64px; }
+.card-landscape .card-header::after { height: 3px; }
+.card-landscape .aw-mark { width: 32px; height: 32px; }
+.card-landscape .wordmark { font-size: 28px; padding-top: 2px; }
+.card-landscape .header-brand { gap: 12px; }
+
+.card-landscape .body-grid {
+  display: grid;
+  grid-template-columns: 700px minmax(0, 500px);
+  height: 100%;
+  min-height: 0;
+  position: relative;
+}
+
+.card-landscape .hero {
+  height: 100%;
+  width: 100%;
+  min-height: 0;
+}
+.card-landscape .condition-tag {
+  top: 18px; left: 18px;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  box-shadow: 0 6px 14px rgba(0, 145, 216, 0.4);
+}
+.card-landscape .dealer-badge {
+  bottom: 20px; right: 20px;
+  padding: 9px 18px 9px 9px;
+  border-radius: 100px;
+  font-size: 17px;
+  gap: 11px;
+}
+.card-landscape .dealer-badge.no-logo { padding-left: 18px; gap: 9px; }
+.card-landscape .dealer-badge.no-logo::before { width: 7px; height: 7px; }
+.card-landscape .dealer-badge .dealer-logo-img { width: 44px; height: 44px; }
+
+.card-landscape .info-stack {
+  padding: 22px 28px 22px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  height: 100%;
+}
+
+.card-landscape .info-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.card-landscape .info-left { flex: 1; min-width: 0; }
+.card-landscape .make {
+  font-size: 34px;
+  white-space: normal;
+  text-overflow: clip;
+  line-height: 0.95;
+}
+.card-landscape .model { font-size: 18px; margin: 4px 0 0; }
+.card-landscape .location { font-size: 14px; margin: 8px 0 0; }
+.card-landscape .location svg { width: 13px; height: 13px; }
+.card-landscape .price-pill { padding: 9px 14px; }
+.card-landscape .price-pill .currency { font-size: 9px; margin-bottom: 2px; letter-spacing: 0.16em; }
+.card-landscape .price-pill .amount { font-size: 22px; }
+.card-landscape .price-pill.call-mode .amount { font-size: 16px; }
+
+.card-landscape .specs {
+  display: flex;
+  gap: 8px;
+  margin-top: auto;
+  margin-bottom: 12px;
+}
+.card-landscape .spec-pill {
+  padding: 9px 4px;
+  gap: 4px;
+}
+.card-landscape .spec-icon-wrap { width: 22px; height: 22px; }
+.card-landscape .spec-text { font-size: 16px; }
+
+.card-landscape .cta {
+  padding: 13px;
+  font-size: 14px;
+  gap: 8px;
+}
+.card-landscape .cta svg { width: 13px; height: 13px; }
+
+.card-landscape .card-footer {
+  padding: 0 36px;
+  height: 80px;
+  gap: 20px;
+}
+.card-landscape .footer-left { gap: 18px; }
+.card-landscape .footer-left .download-text { font-size: 17px; }
+.card-landscape .footer-left .store-badges { gap: 16px; }
+.card-landscape .store-row { gap: 7px; }
+.card-landscape .store-row svg.store-icon-apple { width: 18px; height: 22px; }
+.card-landscape .store-row svg.store-icon-gp { width: 21px; height: 21px; }
+.card-landscape .store-row .store-name { font-size: 15px; }
+.card-landscape .footer-right { font-size: 22px; }
+.card-landscape .footer-right .dot { margin: 0 4px; }
+
+/* =========================================================================
+   CAPTURING STATE
+   ========================================================================= */
+.capturing .card-portrait,
+.capturing .card-fb-portrait,
+.capturing .card-square,
+.capturing .card-landscape {
+  transform: scale(1) !important;
+}
+.capturing .preview-wrapper {
+  overflow: visible !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+.capturing .preview-wrapper.portrait { width: 1080px !important; height: 1350px !important; }
+.capturing .preview-wrapper.fb-portrait { width: 1080px !important; height: 1620px !important; }
+.capturing .preview-wrapper.square { width: 1080px !important; height: 1080px !important; }
+.capturing .preview-wrapper.landscape { width: 1200px !important; height: 630px !important; }
+
+/* =========================================================================
+   TOAST
+   ========================================================================= */
+.toast {
+  position: fixed;
+  bottom: 24px; left: 50%;
+  transform: translateX(-50%) translateY(120px);
+  background: var(--ink); color: white;
+  padding: 13px 20px; border-radius: 100px;
+  font-size: 13px; font-weight: 600;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.25);
+  transition: transform 0.3s ease;
+  z-index: 1000;
+  display: flex; align-items: center; gap: 8px;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+.toast svg { width: 16px; height: 16px; color: var(--accent-light); }
+.toast.error svg { color: #ef4444; }
+
+/* =========================================================================
+   RESPONSIVE
+   ========================================================================= */
+@media (max-width: 920px) {
+  .workspace { grid-template-columns: 1fr; }
+  .form-panel { max-height: none; border-right: none; border-bottom: 1px solid var(--editor-border); }
+}
+
+</style>
+</head>
+<body>
+
+<!-- ============ APP HEADER ============ -->
+<header class="app-header">
+  <div class="app-title">
+    <div class="mini-logo">
+      <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" style="width: 22px; height: 22px;">
+        <g transform="translate(0,512) scale(0.1,-0.1)" fill="currentColor">
+          <path d="M1106 4358 c-27 -43 -866 -1498 -866 -1503 0 -3 178 -5 395 -5 l395 0 17 27 c10 14 120 202 244 417 l225 391 1043 0 1044 0 241 -417 241 -418 398 0 c256 0 397 4 395 10 -1 5 -199 349 -438 764 l-435 755 -1442 1 -1443 0 -14 -22z"/>
+          <path d="M240 1655 l0 -915 785 0 785 0 0 395 0 395 -390 0 -390 0 0 520 0 520 -395 0 -395 0 0 -915z"/>
+          <path d="M4090 2050 l0 -520 -390 0 -390 0 0 -395 0 -395 785 0 785 0 0 915 0 915 -395 0 -395 0 0 -520z"/>
+          <path d="M1820 1935 l0 -395 740 0 740 0 0 395 0 395 -740 0 -740 0 0 -395z"/>
+        </g>
+      </svg>
+    </div>
+    <div>
+      <h1>Listing Post Generator</h1>
+      <div class="subtitle">ArabWheels • v7 • Engine-table parser · Assembly fetched · HQ vignette
+    </div>
+  </div>
+  <div class="app-actions">
+    <button class="btn btn-ghost" id="downloadAllBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14">
+        <path d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7"/>
+        <polyline points="8 11 12 15 16 11"/>
+        <line x1="12" y1="3" x2="12" y2="15"/>
+      </svg>
+      Download All (ZIP)
+    </button>
+    <button class="btn btn-primary" id="downloadBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="7 10 12 15 17 10"/>
+        <line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>
+      Download
+    </button>
+  </div>
+</header>
+
+<div class="workspace">
+
+  <!-- ============ FORM PANEL ============ -->
+  <aside class="form-panel">
+
+    <!-- URL FETCH -->
+    <div class="form-section">
+      <div class="section-label">Auto-fill from URL</div>
+      <div class="url-fetch-group">
+        <input type="url" id="fetchUrl" placeholder="https://www.arabwheels.ae/used-cars/...">
+        <button class="btn btn-secondary" id="fetchBtn">Fetch</button>
+      </div>
+      <div class="fetch-status" id="fetchStatus"></div>
+      <p class="small-note">Paste any ArabWheels listing URL. Fields below auto-populate. Tries multiple proxies for speed.</p>
+    </div>
+
+    <!-- ACCENT COLOR -->
+    <div class="form-section">
+      <div class="section-label">Accent Color</div>
+      <div class="hex-row">
+        <input type="text" id="accentHex" value="#0091D8" maxlength="7" placeholder="#0091D8">
+        <input type="color" id="accentColor" value="#0091D8" title="Pick a color">
+      </div>
+      <p class="small-note">GCC tag, price pill, CTA button. Default cerulean.</p>
+    </div>
+
+    <!-- FONTS -->
+    <div class="form-section">
+      <div class="section-label">Fonts</div>
+      <div class="field"><label>Body / Info text</label>
+        <select id="fontBody">
+          <option value="'Manrope', system-ui, sans-serif">Manrope (default)</option>
+          <option value="'Inter', system-ui, sans-serif">Inter</option>
+          <option value="'Roboto', system-ui, sans-serif">Roboto</option>
+          <option value="'Poppins', system-ui, sans-serif">Poppins</option>
+          <option value="'DM Sans', system-ui, sans-serif">DM Sans</option>
+          <option value="'Cairo', system-ui, sans-serif">Cairo (Arabic-friendly)</option>
+          <option value="'Tajawal', system-ui, sans-serif">Tajawal (Arabic-friendly)</option>
+        </select>
+      </div>
+      <div class="field"><label>Display / Headings (Make, Specs, Price)</label>
+        <select id="fontDisplay">
+          <option value="'Bebas Neue', sans-serif">Bebas Neue (default)</option>
+          <option value="'Oswald', sans-serif">Oswald</option>
+          <option value="'Anton', sans-serif">Anton</option>
+          <option value="'Barlow Condensed', sans-serif">Barlow Condensed</option>
+          <option value="'Roboto Condensed', sans-serif">Roboto Condensed</option>
+          <option value="'Inter', sans-serif">Inter (no condensed)</option>
+          <option value="'Poppins', sans-serif">Poppins (no condensed)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- VEHICLE PHOTO -->
+    <div class="form-section">
+      <div class="section-label">Vehicle Photo</div>
+      <div class="image-tabs">
+        <button class="image-tab active" data-tab="upload">Upload</button>
+        <button class="image-tab" data-tab="url">URL</button>
+      </div>
+      <div class="image-input-area active" id="uploadArea">
+        <label class="file-drop" id="fileDrop">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#29437d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+          <p><strong>Click to upload</strong> or drag & drop</p>
+          <input type="file" id="fileInput" accept="image/*">
+        </label>
+      </div>
+      <div class="image-input-area" id="urlArea">
+        <div class="field"><input type="url" id="imageUrl" placeholder="https://example.com/car.jpg"></div>
+      </div>
+
+      <div class="checkbox-field">
+        <input type="checkbox" id="blurBg">
+        <label for="blurBg">Vignette blur (sharp vehicle, blurred background)</label>
+      </div>
+    </div>
+
+    <!-- VEHICLE -->
+    <div class="form-section">
+      <div class="section-label">Vehicle</div>
+      <div class="field"><label>Make</label><input type="text" id="make" value="Mercedes-Benz" maxlength="20"></div>
+      <div class="field"><label>Model</label><input type="text" id="model" value="E450 AMG" maxlength="30"></div>
+      <div class="field-row">
+        <div class="field"><label>Year</label><input type="number" id="year" value="2021" min="1980" max="2030"></div>
+        <div class="field"><label>Mileage (km)</label><input type="number" id="mileage" value="70000" min="0"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Fuel</label>
+          <select id="fuel"><option>Petrol</option><option>Diesel</option><option>Hybrid</option><option>Electric</option></select>
+        </div>
+        <div class="field"><label>Transmission</label>
+          <select id="transmission"><option>Auto</option><option>Manual</option><option>CVT</option></select>
+        </div>
+      </div>
+      <div class="field"><label>Assembly / Spec</label>
+        <select id="assembly">
+          <option value="GCC">GCC</option>
+          <option value="American">American</option>
+          <option value="Canadian">Canadian</option>
+          <option value="European">European</option>
+          <option value="Japanese">Japanese</option>
+          <option value="Korean">Korean</option>
+          <option value="Chinese">Chinese</option>
+          <option value="Asia">Asia</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <div class="checkbox-field">
+        <input type="checkbox" id="showAssembly" checked>
+        <label for="showAssembly">Show assembly next to location (e.g. "Dubai | GCC Spec")</label>
+      </div>
+    </div>
+
+    <!-- PRICING & LOCATION -->
+    <div class="form-section">
+      <div class="section-label">Pricing & Location</div>
+      <div class="checkbox-field">
+        <input type="checkbox" id="callForPrice">
+        <label for="callForPrice">Call for Price (hide numeric price)</label>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Currency</label>
+          <select id="currency"><option>AED</option><option>SAR</option></select>
+        </div>
+        <div class="field"><label>Price</label><input type="number" id="price" value="138000" min="0"></div>
+      </div>
+      <div class="field"><label>Location</label><input type="text" id="location" value="Ajman, UAE" maxlength="40"></div>
+      <div class="field"><label>Promotional Tag (top-left ribbon)</label>
+        <select id="condition">
+          <option value="">— None —</option>
+          <option>HOT DEAL</option>
+          <option>FAIR DEAL</option>
+          <option>CAR OF THE WEEK</option>
+          <option>SPECIAL OFFER</option>
+          <option>HOT SELLING</option>
+          <option>NEW ARRIVAL</option>
+          <option>BEST PRICE</option>
+          <option>FEATURED</option>
+          <option>LOW MILEAGE</option>
+          <option>SINGLE OWNER</option>
+          <option>JUST ARRIVED</option>
+          <option>STAFF PICK</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- DEALER -->
+    <div class="form-section">
+      <div class="section-label">Dealer (Optional)</div>
+      <div class="checkbox-field">
+        <input type="checkbox" id="showDealer" checked>
+        <label for="showDealer">Show dealer badge</label>
+      </div>
+      <div class="field"><label>Display Mode</label>
+        <select id="dealerMode">
+          <option value="both">Logo + Name</option>
+          <option value="logo">Logo only</option>
+          <option value="name">Name only</option>
+        </select>
+      </div>
+      <div class="field"><label>Dealer Name</label><input type="text" id="dealer" value="Mouatir Trading" maxlength="30"></div>
+      <div class="field">
+        <label>Dealer Logo</label>
+        <label class="file-drop" id="dealerDrop" style="padding: 11px;">
+          <p style="margin: 0; font-size: 11px;"><strong>Click to upload</strong></p>
+          <input type="file" id="dealerLogoInput" accept="image/*">
+        </label>
+        <p class="small-note">
+          <button type="button" class="link-btn" id="clearDealerLogo">Remove dealer logo</button>
+        </p>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- ============ PREVIEW PANEL ============ -->
+  <main class="preview-panel">
+
+    <div class="format-tabs" id="formatTabs">
+      <button class="format-tab active" data-format="portrait">
+        <span>Instagram</span><span class="dim">1080 × 1350</span>
+      </button>
+      <button class="format-tab" data-format="fbPortrait">
+        <span>FB Portrait</span><span class="dim">1080 × 1620</span>
+      </button>
+      <button class="format-tab" data-format="square">
+        <span>FB Square</span><span class="dim">1080 × 1080</span>
+      </button>
+      <button class="format-tab" data-format="landscape">
+        <span>FB Landscape</span><span class="dim">1200 × 630</span>
+      </button>
+    </div>
+
+    <div class="preview-stage">
+
+      <!-- ====================================================================
+           PORTRAIT — 1080 × 1350 (Instagram + Facebook portrait)
+           ==================================================================== -->
+      <div class="preview-wrapper portrait" id="wrapPortrait">
+        <div class="card-portrait card-base" id="cardPortrait">
+
+          <div class="card-header">
+            <div class="header-brand">
+              <svg class="aw-mark" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+                <g transform="translate(0,512) scale(0.1,-0.1)" fill="currentColor">
+                  <path d="M1106 4358 c-27 -43 -866 -1498 -866 -1503 0 -3 178 -5 395 -5 l395 0 17 27 c10 14 120 202 244 417 l225 391 1043 0 1044 0 241 -417 241 -418 398 0 c256 0 397 4 395 10 -1 5 -199 349 -438 764 l-435 755 -1442 1 -1443 0 -14 -22z"/>
+                  <path d="M240 1655 l0 -915 785 0 785 0 0 395 0 395 -390 0 -390 0 0 520 0 520 -395 0 -395 0 0 -915z"/>
+                  <path d="M4090 2050 l0 -520 -390 0 -390 0 0 -395 0 -395 785 0 785 0 0 915 0 915 -395 0 -395 0 0 -520z"/>
+                  <path d="M1820 1935 l0 -395 740 0 740 0 0 395 0 395 -740 0 -740 0 0 -395z"/>
+                </g>
+              </svg>
+              <div class="wordmark">ARABWHEELS</div>
+            </div>
+          </div>
+
+          <div class="hero out-hero">
+            <div class="hero-bg out-hero-bg"></div>
+            <div class="condition-tag out-condition" style="display:none">HOT DEAL</div>
+            <img class="hero-img out-hero-img" alt="Vehicle"
+              src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1080 740'><rect width='1080' height='740' fill='%23F0F0F0'/><text x='540' y='380' font-family='Manrope,sans-serif' font-size='32' fill='%2398A2B3' text-anchor='middle' font-weight='600'>Upload a vehicle photo</text></svg>">
+            <div class="dealer-badge out-dealer no-logo">
+              <span class="out-dealer-name">Mouatir Trading</span>
+            </div>
+          </div>
+
+          <div class="info">
+            <div class="info-left">
+              <h2 class="make out-make">MERCEDES-BENZ</h2>
+              <p class="model out-model">E450 AMG</p>
+              <p class="location">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                  <circle cx="12" cy="10" r="3"/>
+                </svg>
+                <span class="out-location">Ajman, UAE</span>
+              </p>
+            </div>
+            <div class="price-pill">
+              <div class="currency out-currency">AED</div>
+              <div class="amount out-price">138,000</div>
+            </div>
+          </div>
+
+          <div class="specs">
+            <div class="spec-pill">
+              <div class="spec-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+              </div>
+              <div class="spec-text out-year">2021</div>
+            </div>
+            <div class="spec-pill">
+              <div class="spec-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="9"/><path d="M12 12 L17 8"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+                </svg>
+              </div>
+              <div class="spec-text out-mileage">70K KM</div>
+            </div>
+            <div class="spec-pill">
+              <div class="spec-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 22V4a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v18"/><path d="M3 22h11"/><path d="M14 9h3a2 2 0 0 1 2 2v6a2 2 0 0 0 2 2 2 2 0 0 0 2-2V9.5L19 6"/><path d="M6 8h5"/>
+                </svg>
+              </div>
+              <div class="spec-text out-fuel">Petrol</div>
+            </div>
+            <div class="spec-pill">
+              <div class="spec-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="3"/>
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                </svg>
+              </div>
+              <div class="spec-text out-trans">Auto</div>
+            </div>
+          </div>
+
+          <div class="cta">
+            <span>VIEW FULL LISTING ON ARABWHEELS.AE</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+            </svg>
+          </div>
+
+          <div class="card-footer">
+            <div class="footer-left">
+              <div class="download-text">Download Our App</div>
+              <div class="store-badges">
+                <div class="store-row">
+                  <svg class="store-icon-apple" viewBox="0 0 384 512" fill="white"><path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/></svg>
+                  <span class="store-name">App Store</span>
+                </div>
+                <div class="store-row">
+                  <svg class="store-icon-gp" viewBox="0 0 512 512">
+                    <defs>
+                      <linearGradient id="gpa1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#00C3FF"/><stop offset="100%" stop-color="#1A73E8"/></linearGradient>
+                      <linearGradient id="gpb1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#FFE000"/><stop offset="100%" stop-color="#FFBD00"/></linearGradient>
+                      <linearGradient id="gpc1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#FF3A44"/><stop offset="100%" stop-color="#C31162"/></linearGradient>
+                      <linearGradient id="gpd1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#00F076"/><stop offset="100%" stop-color="#00B14F"/></linearGradient>
+                    </defs>
+                    <path fill="url(#gpa1)" d="M64 56v400l224-200z"/>
+                    <path fill="url(#gpb1)" d="M288 256L376 344l72-40c20-12 20-44 0-56l-72-40z"/>
+                    <path fill="url(#gpc1)" d="M64 456l312-112-88-88z"/>
+                    <path fill="url(#gpd1)" d="M64 56l224 200 88-88z"/>
+                  </svg>
+                  <span class="store-name">Google Play</span>
+                </div>
+              </div>
+            </div>
+            <div class="footer-right">BUY<span class="dot">·</span>SELL<span class="dot">·</span>COMPARE</div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ====================================================================
+           FB PORTRAIT — 1080 × 1620 (Facebook portrait, big hero for vertical photos)
+           ==================================================================== -->
+      <div class="preview-wrapper fb-portrait hidden" id="wrapFbPortrait">
+        <div class="card-fb-portrait card-base" id="cardFbPortrait">
+
+          <div class="card-header">
+            <div class="header-brand">
+              <svg class="aw-mark" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+                <g transform="translate(0,512) scale(0.1,-0.1)" fill="currentColor">
+                  <path d="M1106 4358 c-27 -43 -866 -1498 -866 -1503 0 -3 178 -5 395 -5 l395 0 17 27 c10 14 120 202 244 417 l225 391 1043 0 1044 0 241 -417 241 -418 398 0 c256 0 397 4 395 10 -1 5 -199 349 -438 764 l-435 755 -1442 1 -1443 0 -14 -22z"/>
+                  <path d="M240 1655 l0 -915 785 0 785 0 0 395 0 395 -390 0 -390 0 0 520 0 520 -395 0 -395 0 0 -915z"/>
+                  <path d="M4090 2050 l0 -520 -390 0 -390 0 0 -395 0 -395 785 0 785 0 0 915 0 915 -395 0 -395 0 0 -520z"/>
+                  <path d="M1820 1935 l0 -395 740 0 740 0 0 395 0 395 -740 0 -740 0 0 -395z"/>
+                </g>
+              </svg>
+              <div class="wordmark">ARABWHEELS</div>
+            </div>
+          </div>
+
+          <div class="hero out-hero">
+            <div class="hero-bg out-hero-bg"></div>
+            <div class="condition-tag out-condition" style="display:none">HOT DEAL</div>
+            <img class="hero-img out-hero-img" alt="Vehicle"
+              src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1080 940'><rect width='1080' height='940' fill='%23F0F0F0'/><text x='540' y='480' font-family='Manrope,sans-serif' font-size='34' fill='%2398A2B3' text-anchor='middle' font-weight='600'>Upload a vehicle photo</text></svg>">
+            <div class="dealer-badge out-dealer no-logo">
+              <span class="out-dealer-name">Mouatir Trading</span>
+            </div>
+          </div>
+
+          <div class="info">
+            <div class="info-left">
+              <h2 class="make out-make">MERCEDES-BENZ</h2>
+              <p class="model out-model">E450 AMG</p>
+              <p class="location">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+                </svg>
+                <span class="out-location">Ajman, UAE</span>
+              </p>
+            </div>
+            <div class="price-pill">
+              <div class="currency out-currency">AED</div>
+              <div class="amount out-price">138,000</div>
+            </div>
+          </div>
+
+          <div class="specs">
+            <div class="spec-pill"><div class="spec-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div><div class="spec-text out-year">2021</div></div>
+            <div class="spec-pill"><div class="spec-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 12 L17 8"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg></div><div class="spec-text out-mileage">70K KM</div></div>
+            <div class="spec-pill"><div class="spec-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 22V4a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v18"/><path d="M3 22h11"/><path d="M14 9h3a2 2 0 0 1 2 2v6a2 2 0 0 0 2 2 2 2 0 0 0 2-2V9.5L19 6"/><path d="M6 8h5"/></svg></div><div class="spec-text out-fuel">Petrol</div></div>
+            <div class="spec-pill"><div class="spec-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div><div class="spec-text out-trans">Auto</div></div>
+          </div>
+
+          <div class="cta">
+            <span>VIEW FULL LISTING ON ARABWHEELS.AE</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+            </svg>
+          </div>
+
+          <div class="card-footer">
+            <div class="footer-left">
+              <div class="download-text">Download Our App</div>
+              <div class="store-badges">
+                <div class="store-row">
+                  <svg class="store-icon-apple" viewBox="0 0 384 512" fill="white"><path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/></svg>
+                  <span class="store-name">App Store</span>
+                </div>
+                <div class="store-row">
+                  <svg class="store-icon-gp" viewBox="0 0 512 512">
+                    <defs>
+                      <linearGradient id="gpa2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#00C3FF"/><stop offset="100%" stop-color="#1A73E8"/></linearGradient>
+                      <linearGradient id="gpb2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#FFE000"/><stop offset="100%" stop-color="#FFBD00"/></linearGradient>
+                      <linearGradient id="gpc2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#FF3A44"/><stop offset="100%" stop-color="#C31162"/></linearGradient>
+                      <linearGradient id="gpd2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#00F076"/><stop offset="100%" stop-color="#00B14F"/></linearGradient>
+                    </defs>
+                    <path fill="url(#gpa2)" d="M64 56v400l224-200z"/>
+                    <path fill="url(#gpb2)" d="M288 256L376 344l72-40c20-12 20-44 0-56l-72-40z"/>
+                    <path fill="url(#gpc2)" d="M64 456l312-112-88-88z"/>
+                    <path fill="url(#gpd2)" d="M64 56l224 200 88-88z"/>
+                  </svg>
+                  <span class="store-name">Google Play</span>
+                </div>
+              </div>
+            </div>
+            <div class="footer-right">BUY<span class="dot">·</span>SELL<span class="dot">·</span>COMPARE</div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ====================================================================
+           SQUARE — 1080 × 1080 (Facebook feed)
+           ==================================================================== -->
+      <div class="preview-wrapper square hidden" id="wrapSquare">
+        <div class="card-square card-base" id="cardSquare">
+
+          <div class="card-header">
+            <div class="header-brand">
+              <svg class="aw-mark" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+                <g transform="translate(0,512) scale(0.1,-0.1)" fill="currentColor">
+                  <path d="M1106 4358 c-27 -43 -866 -1498 -866 -1503 0 -3 178 -5 395 -5 l395 0 17 27 c10 14 120 202 244 417 l225 391 1043 0 1044 0 241 -417 241 -418 398 0 c256 0 397 4 395 10 -1 5 -199 349 -438 764 l-435 755 -1442 1 -1443 0 -14 -22z"/>
+                  <path d="M240 1655 l0 -915 785 0 785 0 0 395 0 395 -390 0 -390 0 0 520 0 520 -395 0 -395 0 0 -915z"/>
+                  <path d="M4090 2050 l0 -520 -390 0 -390 0 0 -395 0 -395 785 0 785 0 0 915 0 915 -395 0 -395 0 0 -520z"/>
+                  <path d="M1820 1935 l0 -395 740 0 740 0 0 395 0 395 -740 0 -740 0 0 -395z"/>
+                </g>
+              </svg>
+              <div class="wordmark">ARABWHEELS</div>
+            </div>
+          </div>
+
+          <div class="hero out-hero">
+            <div class="hero-bg out-hero-bg"></div>
+            <div class="condition-tag out-condition" style="display:none">HOT DEAL</div>
+            <img class="hero-img out-hero-img" alt="Vehicle"
+              src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1080 530'><rect width='1080' height='530' fill='%23F0F0F0'/><text x='540' y='275' font-family='Manrope,sans-serif' font-size='32' fill='%2398A2B3' text-anchor='middle' font-weight='600'>Upload a vehicle photo</text></svg>">
+            <div class="dealer-badge out-dealer no-logo">
+              <span class="out-dealer-name">Mouatir Trading</span>
+            </div>
+          </div>
+
+          <div class="info">
+            <div class="info-left">
+              <h2 class="make out-make">MERCEDES-BENZ</h2>
+              <p class="model out-model">E450 AMG</p>
+              <p class="location">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+                </svg>
+                <span class="out-location">Ajman, UAE</span>
+              </p>
+            </div>
+            <div class="price-pill">
+              <div class="currency out-currency">AED</div>
+              <div class="amount out-price">138,000</div>
+            </div>
+          </div>
+
+          <div class="specs">
+            <div class="spec-pill"><div class="spec-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div><div class="spec-text out-year">2021</div></div>
+            <div class="spec-pill"><div class="spec-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 12 L17 8"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg></div><div class="spec-text out-mileage">70K KM</div></div>
+            <div class="spec-pill"><div class="spec-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 22V4a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v18"/><path d="M3 22h11"/><path d="M14 9h3a2 2 0 0 1 2 2v6a2 2 0 0 0 2 2 2 2 0 0 0 2-2V9.5L19 6"/><path d="M6 8h5"/></svg></div><div class="spec-text out-fuel">Petrol</div></div>
+            <div class="spec-pill"><div class="spec-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div><div class="spec-text out-trans">Auto</div></div>
+          </div>
+
+          <div class="cta">
+            <span>VIEW FULL LISTING ON ARABWHEELS.AE</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+            </svg>
+          </div>
+
+          <div class="card-footer">
+            <div class="footer-left">
+              <div class="download-text">Download Our App</div>
+              <div class="store-badges">
+                <div class="store-row">
+                  <svg class="store-icon-apple" viewBox="0 0 384 512" fill="white"><path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/></svg>
+                  <span class="store-name">App Store</span>
+                </div>
+                <div class="store-row">
+                  <svg class="store-icon-gp" viewBox="0 0 512 512">
+                    <defs>
+                      <linearGradient id="gpa3" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#00C3FF"/><stop offset="100%" stop-color="#1A73E8"/></linearGradient>
+                      <linearGradient id="gpb3" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#FFE000"/><stop offset="100%" stop-color="#FFBD00"/></linearGradient>
+                      <linearGradient id="gpc3" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#FF3A44"/><stop offset="100%" stop-color="#C31162"/></linearGradient>
+                      <linearGradient id="gpd3" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#00F076"/><stop offset="100%" stop-color="#00B14F"/></linearGradient>
+                    </defs>
+                    <path fill="url(#gpa3)" d="M64 56v400l224-200z"/>
+                    <path fill="url(#gpb3)" d="M288 256L376 344l72-40c20-12 20-44 0-56l-72-40z"/>
+                    <path fill="url(#gpc3)" d="M64 456l312-112-88-88z"/>
+                    <path fill="url(#gpd3)" d="M64 56l224 200 88-88z"/>
+                  </svg>
+                  <span class="store-name">Google Play</span>
+                </div>
+              </div>
+            </div>
+            <div class="footer-right">BUY<span class="dot">·</span>SELL<span class="dot">·</span>COMPARE</div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ====================================================================
+           LANDSCAPE — 1200 × 630 (Facebook link share)
+           ==================================================================== -->
+      <div class="preview-wrapper landscape hidden" id="wrapLandscape">
+        <div class="card-landscape card-base" id="cardLandscape">
+
+          <div class="card-header">
+            <div class="header-brand">
+              <svg class="aw-mark" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+                <g transform="translate(0,512) scale(0.1,-0.1)" fill="currentColor">
+                  <path d="M1106 4358 c-27 -43 -866 -1498 -866 -1503 0 -3 178 -5 395 -5 l395 0 17 27 c10 14 120 202 244 417 l225 391 1043 0 1044 0 241 -417 241 -418 398 0 c256 0 397 4 395 10 -1 5 -199 349 -438 764 l-435 755 -1442 1 -1443 0 -14 -22z"/>
+                  <path d="M240 1655 l0 -915 785 0 785 0 0 395 0 395 -390 0 -390 0 0 520 0 520 -395 0 -395 0 0 -915z"/>
+                  <path d="M4090 2050 l0 -520 -390 0 -390 0 0 -395 0 -395 785 0 785 0 0 915 0 915 -395 0 -395 0 0 -520z"/>
+                  <path d="M1820 1935 l0 -395 740 0 740 0 0 395 0 395 -740 0 -740 0 0 -395z"/>
+                </g>
+              </svg>
+              <div class="wordmark">ARABWHEELS</div>
+            </div>
+          </div>
+
+          <div class="body-grid">
+            <div class="hero out-hero">
+              <div class="hero-bg out-hero-bg"></div>
+              <div class="condition-tag out-condition" style="display:none">HOT DEAL</div>
+              <img class="hero-img out-hero-img" alt="Vehicle"
+                src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 700 510'><rect width='700' height='510' fill='%23F0F0F0'/><text x='350' y='265' font-family='Manrope,sans-serif' font-size='28' fill='%2398A2B3' text-anchor='middle' font-weight='600'>Upload a vehicle photo</text></svg>">
+              <div class="dealer-badge out-dealer no-logo">
+                <span class="out-dealer-name">Mouatir Trading</span>
+              </div>
+            </div>
+
+            <div class="info-stack">
+              <div class="info-row">
+                <div class="info-left">
+                  <h2 class="make out-make">MERCEDES-BENZ</h2>
+                  <p class="model out-model">E450 AMG</p>
+                  <p class="location">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+                    </svg>
+                    <span class="out-location">Ajman, UAE</span>
+                  </p>
+                </div>
+                <div class="price-pill">
+                  <div class="currency out-currency">AED</div>
+                  <div class="amount out-price">138,000</div>
+                </div>
+              </div>
+
+              <div class="specs">
+                <div class="spec-pill"><div class="spec-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div><div class="spec-text out-year">2021</div></div>
+                <div class="spec-pill"><div class="spec-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 12 L17 8"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg></div><div class="spec-text out-mileage">70K KM</div></div>
+                <div class="spec-pill"><div class="spec-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 22V4a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v18"/><path d="M3 22h11"/><path d="M14 9h3a2 2 0 0 1 2 2v6a2 2 0 0 0 2 2 2 2 0 0 0 2-2V9.5L19 6"/><path d="M6 8h5"/></svg></div><div class="spec-text out-fuel">Petrol</div></div>
+                <div class="spec-pill"><div class="spec-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div><div class="spec-text out-trans">Auto</div></div>
+              </div>
+
+              <div class="cta">
+                <span>VIEW FULL LISTING ON ARABWHEELS.AE</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div class="card-footer">
+            <div class="footer-left">
+              <div class="download-text">Download Our App</div>
+              <div class="store-badges">
+                <div class="store-row">
+                  <svg class="store-icon-apple" viewBox="0 0 384 512" fill="white"><path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/></svg>
+                  <span class="store-name">App Store</span>
+                </div>
+                <div class="store-row">
+                  <svg class="store-icon-gp" viewBox="0 0 512 512">
+                    <defs>
+                      <linearGradient id="gpa4" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#00C3FF"/><stop offset="100%" stop-color="#1A73E8"/></linearGradient>
+                      <linearGradient id="gpb4" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#FFE000"/><stop offset="100%" stop-color="#FFBD00"/></linearGradient>
+                      <linearGradient id="gpc4" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#FF3A44"/><stop offset="100%" stop-color="#C31162"/></linearGradient>
+                      <linearGradient id="gpd4" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#00F076"/><stop offset="100%" stop-color="#00B14F"/></linearGradient>
+                    </defs>
+                    <path fill="url(#gpa4)" d="M64 56v400l224-200z"/>
+                    <path fill="url(#gpb4)" d="M288 256L376 344l72-40c20-12 20-44 0-56l-72-40z"/>
+                    <path fill="url(#gpc4)" d="M64 456l312-112-88-88z"/>
+                    <path fill="url(#gpd4)" d="M64 56l224 200 88-88z"/>
+                  </svg>
+                  <span class="store-name">Google Play</span>
+                </div>
+              </div>
+            </div>
+            <div class="footer-right">BUY<span class="dot">·</span>SELL<span class="dot">·</span>COMPARE</div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <polyline points="20 6 9 17 4 12"/>
+  </svg>
+  <span id="toastText">Done</span>
+</div>
+
+<script>
+/* ============================================================================
+   STATE
+   ============================================================================ */
+const State = {
+  currentFormat: 'portrait', // portrait | fbPortrait | square | landscape
+  heroSrc: '',
+  heroVignetteSrc: null, // pre-composed sharp-center / blurred-edges image
+  dealerLogoSrc: null,
+  callForPrice: false,
+  dealerMode: 'both', // both | logo | name
+};
+
+const FORMATS = {
+  portrait:   { id: 'wrapPortrait',   card: 'cardPortrait',   w: 1080, h: 1350, name: 'instagram' },
+  fbPortrait: { id: 'wrapFbPortrait', card: 'cardFbPortrait', w: 1080, h: 1620, name: 'fb-portrait' },
+  square:     { id: 'wrapSquare',     card: 'cardSquare',     w: 1080, h: 1080, name: 'fb-square' },
+  landscape:  { id: 'wrapLandscape',  card: 'cardLandscape',  w: 1200, h: 630,  name: 'fb-landscape' },
+};
+
+const els = {
+  // form
+  fetchUrl: document.getElementById('fetchUrl'),
+  fetchBtn: document.getElementById('fetchBtn'),
+  fetchStatus: document.getElementById('fetchStatus'),
+  accentColor: document.getElementById('accentColor'),
+  accentHex: document.getElementById('accentHex'),
+  fontBody: document.getElementById('fontBody'),
+  fontDisplay: document.getElementById('fontDisplay'),
+  imageUrl: document.getElementById('imageUrl'),
+  fileInput: document.getElementById('fileInput'),
+  fileDrop: document.getElementById('fileDrop'),
+  blurBg: document.getElementById('blurBg'),
+  make: document.getElementById('make'),
+  model: document.getElementById('model'),
+  year: document.getElementById('year'),
+  mileage: document.getElementById('mileage'),
+  fuel: document.getElementById('fuel'),
+  transmission: document.getElementById('transmission'),
+  currency: document.getElementById('currency'),
+  price: document.getElementById('price'),
+  callForPrice: document.getElementById('callForPrice'),
+  location: document.getElementById('location'),
+  condition: document.getElementById('condition'),
+  assembly: document.getElementById('assembly'),
+  showAssembly: document.getElementById('showAssembly'),
+  dealer: document.getElementById('dealer'),
+  dealerMode: document.getElementById('dealerMode'),
+  showDealer: document.getElementById('showDealer'),
+  dealerLogoInput: document.getElementById('dealerLogoInput'),
+  dealerDrop: document.getElementById('dealerDrop'),
+  clearDealerLogo: document.getElementById('clearDealerLogo'),
+
+  // controls
+  downloadBtn: document.getElementById('downloadBtn'),
+  downloadAllBtn: document.getElementById('downloadAllBtn'),
+  formatTabs: document.getElementById('formatTabs'),
+  toast: document.getElementById('toast'),
+  toastText: document.getElementById('toastText'),
+};
+
+/* ============================================================================
+   FORMATTERS
+   ============================================================================ */
+function formatPrice(n) {
+  if (!n && n !== 0) return '0';
+  return Number(n).toLocaleString('en-US');
+}
+function formatMileage(km) {
+  if (!km && km !== 0) return '0 KM';
+  const n = Number(km);
+  if (n >= 1000) return Math.round(n / 1000) + 'K KM';
+  return n + ' KM';
+}
+
+/* ============================================================================
+   ACCENT COLOR
+   ============================================================================ */
+function hexToRgb(hex) {
+  const r = parseInt(hex.slice(1,3), 16);
+  const g = parseInt(hex.slice(3,5), 16);
+  const b = parseInt(hex.slice(5,7), 16);
+  return [r, g, b];
+}
+function adjustColor(hex, amount) {
+  const [r, g, b] = hexToRgb(hex);
+  const a = (v) => Math.max(0, Math.min(255, Math.round(v + amount)));
+  return `rgb(${a(r)}, ${a(g)}, ${a(b)})`;
+}
+function applyAccent(hex) {
+  const root = document.documentElement;
+  const light = adjustColor(hex, 40);
+  const dark = adjustColor(hex, -50);
+  root.style.setProperty('--accent-light', light);
+  root.style.setProperty('--accent-mid', hex);
+  root.style.setProperty('--accent-dark', dark);
+  root.style.setProperty('--accent-gradient',
+    `linear-gradient(135deg, ${light} 0%, ${hex} 50%, ${dark} 100%)`);
+  const [r, g, b] = hexToRgb(hex);
+  root.style.setProperty('--accent-glow',
+    `0 8px 24px rgba(${r}, ${g}, ${b}, 0.4), inset 0 1px 0 rgba(255,255,255,0.3)`);
+}
+
+function isValidHex(v) {
+  return /^#[0-9A-Fa-f]{6}$/.test(v);
+}
+
+function setAccent(hex, sourceEl) {
+  if (!isValidHex(hex)) return;
+  // sync the OTHER input
+  if (sourceEl !== els.accentHex) els.accentHex.value = hex.toUpperCase();
+  if (sourceEl !== els.accentColor) els.accentColor.value = hex;
+  applyAccent(hex);
+}
+
+els.accentColor.addEventListener('input', e => setAccent(e.target.value, els.accentColor));
+els.accentHex.addEventListener('input', e => {
+  let v = e.target.value.trim();
+  if (v && !v.startsWith('#')) v = '#' + v;
+  if (isValidHex(v)) setAccent(v, els.accentHex);
+});
+els.accentHex.addEventListener('blur', e => {
+  // normalize: pad / uppercase
+  let v = e.target.value.trim().toUpperCase();
+  if (v && !v.startsWith('#')) v = '#' + v;
+  if (isValidHex(v)) {
+    e.target.value = v;
+    setAccent(v, els.accentHex);
+  } else {
+    // revert to current color picker value
+    e.target.value = els.accentColor.value.toUpperCase();
+  }
+});
+
+/* ============================================================================
+   FONTS
+   ============================================================================ */
+function applyFonts() {
+  const root = document.documentElement;
+  root.style.setProperty('--font-body', els.fontBody.value);
+  root.style.setProperty('--font-display', els.fontDisplay.value);
+}
+els.fontBody.addEventListener('change', applyFonts);
+els.fontDisplay.addEventListener('change', applyFonts);
+
+/* ============================================================================
+   RENDER (updates all 3 cards from form state)
+   ============================================================================ */
+function setText(cls, text) {
+  document.querySelectorAll('.' + cls).forEach(el => el.textContent = text);
+}
+
+function render() {
+  setText('out-make', (els.make.value || '').toUpperCase());
+  setText('out-model', els.model.value || '');
+  setText('out-year', els.year.value || '');
+  setText('out-mileage', formatMileage(els.mileage.value));
+  setText('out-fuel', els.fuel.value);
+  setText('out-trans', els.transmission.value);
+  // Location with optional assembly suffix (e.g. "Dubai | GCC Spec")
+  const baseLoc = els.location.value || '';
+  const asm = els.assembly.value || '';
+  const showAsm = els.showAssembly.checked && asm;
+  const locationText = showAsm ? `${baseLoc}  |  ${asm} Spec` : baseLoc;
+  setText('out-location', locationText);
+
+  // === PRICE: handle Call for Price mode ===
+  const callPrice = els.callForPrice.checked;
+  document.querySelectorAll('.price-pill').forEach(pill => {
+    const currencyEl = pill.querySelector('.out-currency');
+    const amountEl = pill.querySelector('.out-price');
+    if (callPrice) {
+      if (currencyEl) currencyEl.textContent = 'CALL';
+      if (amountEl) amountEl.textContent = 'For Price';
+      pill.classList.add('call-mode');
+    } else {
+      if (currencyEl) currencyEl.textContent = els.currency.value;
+      if (amountEl) amountEl.textContent = formatPrice(els.price.value);
+      pill.classList.remove('call-mode');
+    }
+  });
+  // Disable price/currency inputs when Call for Price is on
+  els.price.disabled = callPrice;
+  els.currency.disabled = callPrice;
+
+  // === CONDITION TAG ===
+  const cond = els.condition.value;
+  document.querySelectorAll('.out-condition').forEach(el => {
+    if (cond) {
+      el.textContent = cond;
+      el.style.display = '';
+    } else {
+      el.style.display = 'none';
+    }
+  });
+
+  // === DEALER BADGE with mode (both | logo | name) ===
+  const mode = els.dealerMode.value;
+  document.querySelectorAll('.out-dealer').forEach(badge => {
+    const showBadge = els.showDealer.checked && (els.dealer.value || State.dealerLogoSrc);
+    if (!showBadge) { badge.style.display = 'none'; return; }
+    badge.style.display = '';
+
+    const nameEl = badge.querySelector('.out-dealer-name');
+    const oldLogo = badge.querySelector('.dealer-logo-img');
+    if (oldLogo) oldLogo.remove();
+    badge.classList.remove('logo-only', 'no-logo');
+
+    if (mode === 'name') {
+      // Name only — no logo even if available
+      if (nameEl) {
+        nameEl.textContent = els.dealer.value;
+        nameEl.style.display = '';
+      }
+      badge.classList.add('no-logo');
+    } else if (mode === 'logo' && State.dealerLogoSrc) {
+      // Logo only
+      const img = document.createElement('img');
+      img.className = 'dealer-logo-img';
+      img.src = State.dealerLogoSrc;
+      img.alt = 'Dealer';
+      badge.insertBefore(img, nameEl);
+      badge.classList.add('logo-only');
+      if (nameEl) nameEl.style.display = 'none';
+    } else {
+      // Both (default), or fallback if logo mode but no logo uploaded
+      if (nameEl) {
+        nameEl.textContent = els.dealer.value;
+        nameEl.style.display = '';
+      }
+      if (State.dealerLogoSrc) {
+        const img = document.createElement('img');
+        img.className = 'dealer-logo-img';
+        img.src = State.dealerLogoSrc;
+        img.alt = 'Dealer';
+        badge.insertBefore(img, nameEl);
+      } else {
+        badge.classList.add('no-logo');
+      }
+    }
+  });
+
+  // === HERO IMAGE: vignette mode swaps the image source ===
+  const blurOn = els.blurBg.checked;
+  if (State.heroSrc) {
+    const heroSrc = (blurOn && State.heroVignetteSrc) ? State.heroVignetteSrc : State.heroSrc;
+    document.querySelectorAll('.out-hero-img').forEach(img => {
+      // only update if changed (avoid reload flashing)
+      if (img.src !== heroSrc) img.src = heroSrc;
+    });
+    // The hero-bg layer is no longer used in vignette mode (the composite image IS the layer)
+    // but we keep it as a safety net for cases where vignette generation failed
+    document.querySelectorAll('.out-hero-bg').forEach(bg => bg.style.backgroundImage = '');
+    document.querySelectorAll('.out-hero').forEach(hero => hero.classList.remove('blurred'));
+  }
+}
+
+/* ============================================================================
+   IMAGE HANDLING
+   ============================================================================ */
+async function setHeroImage(src) {
+  State.heroSrc = src;
+  State.heroVignetteSrc = null;
+
+  // Show original immediately
+  document.querySelectorAll('.out-hero-img').forEach(img => {
+    img.crossOrigin = 'anonymous';
+    img.src = src;
+    img.onerror = () => {
+      img.crossOrigin = null;
+      img.src = src;
+    };
+  });
+
+  // Generate the vignette composite (sharp center + blurred edges) in background
+  try {
+    const vignette = await makeVignetteImage(src);
+    State.heroVignetteSrc = vignette;
+    // If blur is currently on, swap to it
+    if (els.blurBg.checked) render();
+  } catch (e) {
+    console.warn('Vignette generation failed:', e);
+    State.heroVignetteSrc = null;
+  }
+}
+
+function loadImageFromFile(file, target) {
+  if (!file || !file.type.startsWith('image/')) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    if (target === 'hero') {
+      setHeroImage(e.target.result);
+    } else if (target === 'dealer') {
+      State.dealerLogoSrc = e.target.result;
+      render();
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+els.fileInput.addEventListener('change', e => loadImageFromFile(e.target.files[0], 'hero'));
+els.fileDrop.addEventListener('dragover', e => { e.preventDefault(); els.fileDrop.classList.add('dragover'); });
+els.fileDrop.addEventListener('dragleave', () => els.fileDrop.classList.remove('dragover'));
+els.fileDrop.addEventListener('drop', e => {
+  e.preventDefault();
+  els.fileDrop.classList.remove('dragover');
+  loadImageFromFile(e.dataTransfer.files[0], 'hero');
+});
+
+els.imageUrl.addEventListener('input', e => {
+  const url = e.target.value.trim();
+  if (url) setHeroImage(url);
+});
+
+els.dealerLogoInput.addEventListener('change', e => loadImageFromFile(e.target.files[0], 'dealer'));
+els.dealerDrop.addEventListener('dragover', e => { e.preventDefault(); els.dealerDrop.classList.add('dragover'); });
+els.dealerDrop.addEventListener('dragleave', () => els.dealerDrop.classList.remove('dragover'));
+els.dealerDrop.addEventListener('drop', e => {
+  e.preventDefault();
+  els.dealerDrop.classList.remove('dragover');
+  loadImageFromFile(e.dataTransfer.files[0], 'dealer');
+});
+els.clearDealerLogo.addEventListener('click', () => {
+  State.dealerLogoSrc = null;
+  els.dealerLogoInput.value = '';
+  render();
+});
+
+/* ============================================================================
+   IMAGE TABS
+   ============================================================================ */
+document.querySelectorAll('.image-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.image-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.image-input-area').forEach(a => a.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(tab.dataset.tab + 'Area').classList.add('active');
+  });
+});
+
+/* ============================================================================
+   FORMAT TABS
+   ============================================================================ */
+els.formatTabs.addEventListener('click', e => {
+  const btn = e.target.closest('.format-tab');
+  if (!btn) return;
+  const fmt = btn.dataset.format;
+  State.currentFormat = fmt;
+  els.formatTabs.querySelectorAll('.format-tab').forEach(t => t.classList.toggle('active', t === btn));
+  Object.keys(FORMATS).forEach(k => {
+    const wrap = document.getElementById(FORMATS[k].id);
+    wrap.classList.toggle('hidden', k !== fmt);
+  });
+});
+
+/* ============================================================================
+   FORM BINDINGS
+   ============================================================================ */
+['make','model','year','mileage','fuel','transmission','currency','price','location','condition','dealer'].forEach(k => {
+  els[k].addEventListener('input', render);
+  els[k].addEventListener('change', render);
+});
+els.showDealer.addEventListener('change', render);
+els.dealerMode.addEventListener('change', render);
+els.callForPrice.addEventListener('change', render);
+els.blurBg.addEventListener('change', render);
+els.assembly.addEventListener('change', render);
+els.showAssembly.addEventListener('change', render);
+
+/* ============================================================================
+   URL FETCH (auto-fill from ArabWheels listing)
+   ============================================================================ */
+const KNOWN_MULTI_WORD_MAKES = [
+  'Mercedes-Benz', 'Mercedes Benz', 'Land Rover', 'Range Rover',
+  'Aston Martin', 'Rolls Royce', 'Rolls-Royce', 'Alfa Romeo',
+];
+
+// CORS proxies — corsproxy.io first because it's typically fastest
+const PROXIES = [
+  { name: 'corsproxy', build: url => `https://corsproxy.io/?${encodeURIComponent(url)}` },
+  { name: 'allorigins', build: url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}` },
+  { name: 'codetabs',  build: url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}` },
+];
+
+const PROXY_TIMEOUT_MS = 6000;
+
+// Wrap fetch with abort timeout
+async function fetchWithTimeout(url, ms, opts) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), ms);
+  try {
+    const resp = await fetch(url, { ...(opts || {}), signal: ctrl.signal });
+    clearTimeout(timer);
+    return resp;
+  } catch (e) {
+    clearTimeout(timer);
+    throw e;
+  }
+}
+
+// Race all proxies in parallel; first to return valid content wins
+async function fetchViaProxy(url, expectText) {
+  const attempts = PROXIES.map(async (proxy) => {
+    const t0 = performance.now();
+    const resp = await fetchWithTimeout(proxy.build(url), PROXY_TIMEOUT_MS, {
+      headers: { 'Accept': 'text/html,*/*' },
+    });
+    if (!resp.ok) throw new Error(`${proxy.name} HTTP ${resp.status}`);
+    if (expectText) {
+      const text = await resp.text();
+      if (!text || text.length < 500) throw new Error(`${proxy.name} returned tiny body`);
+      console.log(`[fetch] ${proxy.name} won in ${Math.round(performance.now() - t0)}ms (${text.length} chars)`);
+      return { proxy: proxy.name, text };
+    } else {
+      const blob = await resp.blob();
+      if (!blob || blob.size < 100) throw new Error(`${proxy.name} returned tiny blob`);
+      console.log(`[fetch] ${proxy.name} won in ${Math.round(performance.now() - t0)}ms (${blob.size} bytes)`);
+      return { proxy: proxy.name, blob };
+    }
+  });
+  // Promise.any: first non-rejected wins
+  return Promise.any(attempts);
+}
+
+function getImgSrc(img) {
+  return img.getAttribute('src')
+      || img.getAttribute('data-src')
+      || img.getAttribute('data-lazy-src')
+      || img.getAttribute('data-original')
+      || '';
+}
+
+function splitMakeModel(name) {
+  for (const make of KNOWN_MULTI_WORD_MAKES) {
+    if (name.toLowerCase().startsWith(make.toLowerCase())) {
+      return { make, model: name.substring(make.length).trim() };
+    }
+  }
+  const parts = name.split(/\s+/);
+  return { make: parts[0] || '', model: parts.slice(1).join(' ') };
+}
+
+function showFetchStatus(msg, type) {
+  els.fetchStatus.textContent = msg;
+  els.fetchStatus.className = 'fetch-status show ' + (type || '');
+}
+
+async function fetchListing(url) {
+  const t0 = performance.now();
+  showFetchStatus('Fetching listing… (racing 3 proxies in parallel)', '');
+  els.fetchBtn.disabled = true;
+  try {
+    const { text: html, proxy } = await fetchViaProxy(url, true);
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const data = parseArabWheels(doc);
+    await applyParsedData(data);
+
+    const ms = Math.round(performance.now() - t0);
+    const filledFields = Object.keys(data).filter(k => data[k]);
+    if (filledFields.length === 0) {
+      showFetchStatus(`Page loaded via ${proxy} in ${ms}ms but no fields parsed — check URL.`, 'error');
+    } else {
+      showFetchStatus(`Loaded ${filledFields.length} field${filledFields.length === 1 ? '' : 's'} via ${proxy} in ${ms}ms.`, 'success');
+    }
+  } catch (err) {
+    // Promise.any rejects with AggregateError when all attempts fail
+    const reasons = err.errors ? err.errors.map(e => e.message).join(' / ') : err.message;
+    console.error('All proxies failed:', reasons);
+    showFetchStatus(`Couldn't reach the page (${reasons}). Try again or paste fields manually.`, 'error');
+  }
+  els.fetchBtn.disabled = false;
+}
+
+/**
+ * Extract a {label_lowercase: value} map of vehicle spec pairs from the listing page.
+ *
+ * Handles multiple HTML structures used by ArabWheels (and PakWheels lineage):
+ *  - <li><span>Label</span><span>Value</span></li>
+ *  - <table><tr><td>Label</td><td>Value</td></tr></table>
+ *  - <dt>Label</dt><dd>Value</dd>
+ *  - <div class="..."><span>Label:</span> Value</div>
+ *
+ * Known labels we care about: Mileage, Engine Type, Engine Capacity, Transmission,
+ * Color, Assembly, Body Type, Fuel Type, Drive, etc.
+ */
+function extractSpecPairs(doc) {
+  const pairs = {};
+  const knownLabels = new Set([
+    'mileage', 'kilometers', 'kms', 'millage',
+    'engine type', 'fuel', 'fuel type', 'type',
+    'engine capacity', 'engine size', 'displacement', 'engine cc', 'engine',
+    'transmission', 'gearbox',
+    'color', 'colour', 'exterior color', 'interior color',
+    'assembly', 'origin', 'spec', 'specifications',
+    'body type', 'body style',
+    'drive', 'drive type', 'drivetrain', 'drive train',
+    'doors',
+    'cylinders',
+    'horsepower', 'hp', 'power',
+    'condition',
+    'reg city', 'registered in', 'registration city',
+    'year',
+  ]);
+
+  function clean(s) {
+    return (s || '').replace(/\s+/g, ' ').trim();
+  }
+
+  // === Strategy 0a: ArabWheels engine-detail table (year/mileage/fuel/transmission) ===
+  // Structure: <table class="table-engine-detail"><tr><td><span class="engine-icon TYPE"></span><p>VALUE</p></td>...</tr></table>
+  // The icon span class indicates the field (year/millage/type/transmission)
+  doc.querySelectorAll('table.table-engine-detail td, .table-engine-detail td').forEach(td => {
+    const iconSpan = td.querySelector('span.engine-icon, span[class*="engine-icon"]');
+    const valueEl = td.querySelector('p');
+    if (!iconSpan || !valueEl) return;
+    const value = clean(valueEl.textContent);
+    if (!value) return;
+    const cls = (iconSpan.className || '').toLowerCase();
+    // Map icon class to canonical label
+    if (/\byear\b/.test(cls)) pairs['year'] = value;
+    else if (/\bmillage\b|\bmileage\b/.test(cls)) pairs['mileage'] = value;
+    else if (/\btype\b/.test(cls)) pairs['fuel'] = value;
+    else if (/\btransmission\b/.test(cls)) pairs['transmission'] = value;
+  });
+
+  // === Strategy 0b: ArabWheels ad-data ul (Assembly/Color/Engine CC etc.) ===
+  // Structure: <ul><li class="ad-data">LABEL</li><li>VALUE</li>...</ul>
+  // Each ad-data li's NEXT SIBLING li holds the value.
+  doc.querySelectorAll('li.ad-data').forEach(labelLi => {
+    const label = clean(labelLi.textContent).toLowerCase().replace(/[:.]+$/, '').trim();
+    const valueLi = labelLi.nextElementSibling;
+    if (!valueLi || valueLi.tagName.toLowerCase() !== 'li') return;
+    if (valueLi.classList.contains('ad-data')) return; // skip if next is another label
+    const value = clean(valueLi.textContent);
+    if (label && value) pairs[label] = value;
+  });
+
+  // Strategy 1: dt/dd pairs
+  doc.querySelectorAll('dt').forEach(dt => {
+    const label = clean(dt.textContent).toLowerCase().replace(/[:.]+$/, '').trim();
+    const dd = dt.nextElementSibling;
+    if (dd && dd.tagName.toLowerCase() === 'dd') {
+      const value = clean(dd.textContent);
+      if (label && value && knownLabels.has(label)) pairs[label] = value;
+    }
+  });
+
+  // Strategy 2: table rows with 2 cells
+  doc.querySelectorAll('table tr').forEach(tr => {
+    const cells = tr.querySelectorAll('td, th');
+    if (cells.length === 2) {
+      const label = clean(cells[0].textContent).toLowerCase().replace(/[:.]+$/, '').trim();
+      const value = clean(cells[1].textContent);
+      if (label && value && knownLabels.has(label)) pairs[label] = value;
+    }
+  });
+
+  // Strategy 3: list items containing 2 spans/divs (label + value)
+  doc.querySelectorAll('li').forEach(li => {
+    const children = Array.from(li.children).filter(c =>
+      ['span', 'div', 'p', 'strong', 'b'].includes(c.tagName.toLowerCase())
+    );
+    if (children.length === 2) {
+      const label = clean(children[0].textContent).toLowerCase().replace(/[:.]+$/, '').trim();
+      const value = clean(children[1].textContent);
+      if (label && value && knownLabels.has(label) && value.length < 80) pairs[label] = value;
+    }
+  });
+
+  // Strategy 4: divs with 2 spans (common in ArabWheels listings)
+  doc.querySelectorAll('div').forEach(div => {
+    // Don't recurse into giant containers
+    if (div.children.length !== 2) return;
+    const a = div.children[0];
+    const b = div.children[1];
+    if (!['span', 'p', 'strong', 'b', 'small'].includes(a.tagName.toLowerCase())) return;
+    if (!['span', 'p', 'strong', 'b', 'small'].includes(b.tagName.toLowerCase())) return;
+    const label = clean(a.textContent).toLowerCase().replace(/[:.]+$/, '').trim();
+    const value = clean(b.textContent);
+    if (label && value && knownLabels.has(label) && value.length < 80 && !pairs[label]) {
+      pairs[label] = value;
+    }
+  });
+
+  // Strategy 5: heuristic — search for "Label: Value" patterns in plain text near known labels
+  // This catches cases where the label sits on the same line as the value with a colon between.
+  const text = doc.body ? doc.body.textContent : '';
+  knownLabels.forEach(lbl => {
+    if (pairs[lbl]) return;
+    // Build a regex like /Mileage[\s:.\-]*([A-Za-z0-9,\s]+?)(?:\n|$|[A-Z][a-z]+:)/
+    // but escape spaces in label
+    const pat = new RegExp(lbl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/ /g, '\\s+') + '\\s*[:\\-]\\s*([^\\n\\r]{1,60}?)(?=[A-Z][a-z]+\\s*[:\\-]|\\n|$)', 'i');
+    const m = text.match(pat);
+    if (m && m[1]) {
+      const v = clean(m[1]);
+      if (v && v.length < 60) pairs[lbl] = v;
+    }
+  });
+
+  return pairs;
+}
+
+function parseArabWheels(doc) {
+  const data = {};
+  const text = doc.body ? doc.body.textContent : '';
+
+  // === TITLE → make + model + year ===
+  const h1 = doc.querySelector('h1');
+  if (h1) {
+    let title = h1.textContent.trim();
+    // strip "for sale in <city>" if present
+    title = title.replace(/\s+for sale in\s+.*$/i, '').trim();
+    // extract year (4 digits)
+    const yearMatch = title.match(/\b(19|20)\d{2}\b/);
+    if (yearMatch) {
+      data.year = yearMatch[0];
+      title = title.replace(yearMatch[0], '').trim();
+    }
+    const split = splitMakeModel(title);
+    data.make = split.make;
+    data.model = split.model;
+  }
+
+  // === PRICE — try multiple strategies, pick the largest plausible value ===
+  // 1. Check for "Call for Price" / "Price on Request" markers first
+  if (/Call\s*for\s*Price|Price\s*on\s*Request|POA\b/i.test(text)) {
+    data.callForPrice = true;
+  }
+
+  // 2. Try JSON-LD (most reliable when present)
+  let priceFromJsonLd = null;
+  let currencyFromJsonLd = null;
+  doc.querySelectorAll('script[type="application/ld+json"]').forEach(script => {
+    try {
+      const json = JSON.parse(script.textContent);
+      const arr = Array.isArray(json) ? json : [json];
+      arr.forEach(obj => {
+        const offers = obj && (obj.offers || (obj['@graph'] && obj['@graph'].find(g => g.offers)?.offers));
+        if (offers) {
+          const ofs = Array.isArray(offers) ? offers : [offers];
+          ofs.forEach(of => {
+            if (of.price && Number(of.price) > 0) {
+              const p = Number(of.price);
+              if (!priceFromJsonLd || p > priceFromJsonLd) {
+                priceFromJsonLd = p;
+                if (of.priceCurrency) currencyFromJsonLd = of.priceCurrency;
+              }
+            }
+          });
+        }
+      });
+    } catch (e) { /* ignore non-JSON */ }
+  });
+
+  if (priceFromJsonLd) {
+    data.price = String(priceFromJsonLd);
+    if (currencyFromJsonLd) data.currency = currencyFromJsonLd;
+    else if (/\bAED\b/.test(text)) data.currency = 'AED';
+    else if (/\bSAR\b/.test(text)) data.currency = 'SAR';
+  } else if (!data.callForPrice) {
+    // 3. Fallback: regex scan — find ALL "AED|SAR <number>" matches and pick the LARGEST
+    // (Avoids picking "AED 9,750/month" loan figures over "AED 975,000" actual price)
+    const allPrices = [];
+    const re = /(AED|SAR)\s*([\d][\d,\.]{0,15})/gi;
+    let m;
+    while ((m = re.exec(text)) !== null) {
+      const num = parseInt(m[2].replace(/[,\.]/g, ''), 10);
+      if (num >= 1000 && num <= 100000000) {
+        allPrices.push({ currency: m[1].toUpperCase(), price: num });
+      }
+    }
+    if (allPrices.length > 0) {
+      // pick the largest — actual sale price almost always exceeds loan/EMI quotes
+      allPrices.sort((a, b) => b.price - a.price);
+      data.currency = allPrices[0].currency;
+      data.price = String(allPrices[0].price);
+    }
+  }
+
+  // === GENERIC LABEL-VALUE EXTRACTOR ===
+  // ArabWheels listing pages use various structures (li/span pairs, table rows, dt/dd, etc).
+  // Build a map of {label_lower: value} by walking key-looking elements and pairing with their siblings or parent's other text.
+  const specs = extractSpecPairs(doc);
+  console.log('[parser] extracted spec pairs:', specs);
+
+  // === FUEL — check spec map first, then fallback to text scan ===
+  // ArabWheels engine-detail table uses 'type' as the fuel column key
+  const fuelVal = (specs['fuel'] || specs['fuel type'] || specs['engine type'] || specs['type'] || '').toLowerCase();
+  if (fuelVal) {
+    if (/petrol|gasoline/.test(fuelVal)) data.fuel = 'Petrol';
+    else if (/diesel/.test(fuelVal)) data.fuel = 'Diesel';
+    else if (/hybrid/.test(fuelVal)) data.fuel = 'Hybrid';
+    else if (/electric/.test(fuelVal)) data.fuel = 'Electric';
+  }
+  // Fallback to text scan if not found in spec pairs
+  if (!data.fuel) {
+    if (/\bPetrol\b/i.test(text)) data.fuel = 'Petrol';
+    else if (/\bDiesel\b/i.test(text)) data.fuel = 'Diesel';
+    else if (/\bHybrid\b/i.test(text)) data.fuel = 'Hybrid';
+    else if (/\bElectric\b/i.test(text)) data.fuel = 'Electric';
+  }
+
+  // === TRANSMISSION ===
+  const transVal = (specs['transmission'] || specs['gearbox'] || '').toLowerCase();
+  if (transVal) {
+    if (/auto/.test(transVal)) data.transmission = 'Auto';
+    else if (/manual/.test(transVal)) data.transmission = 'Manual';
+    else if (/cvt/.test(transVal)) data.transmission = 'CVT';
+  }
+  if (!data.transmission) {
+    if (/\bAutomatic\b/i.test(text)) data.transmission = 'Auto';
+    else if (/\bManual\b/i.test(text)) data.transmission = 'Manual';
+    else if (/\bCVT\b/.test(text)) data.transmission = 'CVT';
+  }
+
+  // === MILEAGE — prefer spec map, fallback to text scan ===
+  // ArabWheels uses "millage" (typo) as the icon class
+  const mileageVal = specs['mileage'] || specs['millage'] || specs['kilometers'] || specs['kms'] || '';
+  if (mileageVal) {
+    const m = mileageVal.match(/([\d,]+)/);
+    if (m) data.mileage = m[1].replace(/,/g, '');
+  }
+  if (!data.mileage) {
+    const mileageMatch = text.match(/([\d,]+)\s*km\b/i);
+    if (mileageMatch) data.mileage = mileageMatch[1].replace(/,/g, '');
+  }
+
+  // === ASSEMBLY (independent of promotional tag in v6+) ===
+  // Map ArabWheels' assembly values to our 9 dropdown options:
+  // GCC, American, Canadian, European, Japanese, Korean, Chinese, Asia, Other
+  const asmVal = (specs['assembly'] || specs['origin'] || specs['spec'] || '').toUpperCase();
+  if (asmVal) {
+    if (/GCC/.test(asmVal)) data.assembly = 'GCC';
+    else if (/AMERICAN|US|USA/.test(asmVal)) data.assembly = 'American';
+    else if (/CANADIAN|CANADA/.test(asmVal)) data.assembly = 'Canadian';
+    else if (/EUROPEAN|EURO/.test(asmVal)) data.assembly = 'European';
+    else if (/JAPANESE|JAPAN/.test(asmVal)) data.assembly = 'Japanese';
+    else if (/KOREAN|KOREA/.test(asmVal)) data.assembly = 'Korean';
+    else if (/CHINESE|CHINA/.test(asmVal)) data.assembly = 'Chinese';
+    else if (/ASIA|IMPORTED/.test(asmVal)) data.assembly = 'Asia';
+    else data.assembly = 'Other';
+  }
+  // Fallback: text scan around the word "Assembly"
+  if (!data.assembly) {
+    const m = text.match(/Assembly[^A-Za-z]{0,5}([A-Za-z]+)/i);
+    if (m) {
+      const v = m[1].toUpperCase();
+      if (v === 'GCC') data.assembly = 'GCC';
+      else if (v === 'AMERICAN') data.assembly = 'American';
+      else if (v === 'CANADIAN') data.assembly = 'Canadian';
+      else if (v === 'EUROPEAN') data.assembly = 'European';
+      else if (v === 'JAPANESE') data.assembly = 'Japanese';
+      else if (v === 'KOREAN') data.assembly = 'Korean';
+      else if (v === 'CHINESE') data.assembly = 'Chinese';
+      else if (v === 'IMPORTED') data.assembly = 'Asia';
+    }
+  }
+
+  // === LOCATION ===
+  // breadcrumb pattern or h1 "for sale in X"
+  const cityMatch = (h1 ? h1.textContent : '').match(/for sale in\s+([A-Za-z\s]+?)(?:\s*[-–]|\s*$)/i);
+  if (cityMatch) {
+    data.location = cityMatch[1].trim() + ', UAE';
+  } else {
+    // try to find a location indicator from breadcrumbs
+    const breadCrumb = Array.from(doc.querySelectorAll('a'))
+      .find(a => /\/used-cars\/(abu-dhabi|ajman|al-ain|dubai|fujairah|ras-al-khaimah|sharjah|umm-al-quwain)\//i.test(a.href));
+    if (breadCrumb) {
+      const m = breadCrumb.href.match(/\/used-cars\/([^\/]+)\//);
+      if (m) {
+        const city = m[1].split('-').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
+        data.location = city + ', UAE';
+      }
+    }
+  }
+
+  // === HERO IMAGE ===
+  const heroImg = Array.from(doc.querySelectorAll('img'))
+    .find(img => {
+      const s = getImgSrc(img);
+      return s.includes('ad_pictures') && !s.startsWith('data:');
+    });
+  if (heroImg) {
+    let src = getImgSrc(heroImg);
+    // ensure absolute
+    if (src.startsWith('//')) src = 'https:' + src;
+    else if (src.startsWith('/')) src = 'https://www.arabwheels.ae' + src;
+    data.imageUrl = src;
+  }
+
+  // === DEALER LOGO + NAME ===
+  const dealerImg = Array.from(doc.querySelectorAll('img'))
+    .find(img => {
+      const s = getImgSrc(img);
+      return s.includes('dealerships/dealers') && !s.startsWith('data:');
+    });
+  if (dealerImg) {
+    let src = getImgSrc(dealerImg);
+    if (src.startsWith('//')) src = 'https:' + src;
+    else if (src.startsWith('/')) src = 'https://www.arabwheels.ae' + src;
+    data.dealerLogoUrl = src;
+    // alt text often is the dealer name
+    if (dealerImg.getAttribute('alt')) {
+      data.dealer = dealerImg.getAttribute('alt');
+    }
+  }
+
+  // try a more reliable dealer-name source: link to dealer page
+  const dealerLink = Array.from(doc.querySelectorAll('a'))
+    .find(a => /\/used-cars\/dealers\/[a-z0-9-]+/i.test(a.getAttribute('href') || ''));
+  if (dealerLink && dealerLink.textContent.trim().length > 0 && dealerLink.textContent.trim().length < 50) {
+    const dealerText = dealerLink.textContent.trim();
+    // prefer name-only link text over breadcrumb-like text
+    if (dealerText && !dealerText.includes('more ads') && !dealerText.includes('»')) {
+      data.dealer = dealerText;
+    }
+  }
+
+  return data;
+}
+
+async function urlToDataUrl(url) {
+  try {
+    const { blob } = await fetchViaProxy(url, false);
+    return await new Promise((res, rej) => {
+      const r = new FileReader();
+      r.onload = () => res(r.result);
+      r.onerror = rej;
+      r.readAsDataURL(blob);
+    });
+  } catch (e) {
+    console.warn('All image proxies failed; using direct URL (may not render in PNG)', e.message || e);
+    return url;
+  }
+}
+
+/* ============================================================================
+   VIGNETTE COMPOSITOR — sharp vehicle in center, blurred surrounding background
+   Produces a single canvas image (works in html2canvas — no CSS filters).
+   ============================================================================ */
+function loadImg(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve(img);
+    img.onerror = () => {
+      // retry without CORS (data URLs and same-origin)
+      const img2 = new Image();
+      img2.onload = () => resolve(img2);
+      img2.onerror = () => reject(new Error('Image load failed'));
+      img2.src = src;
+    };
+    img.src = src;
+  });
+}
+
+async function makeVignetteImage(srcUrl) {
+  const img = await loadImg(srcUrl);
+  const w = img.naturalWidth;
+  const h = img.naturalHeight;
+  if (!w || !h) throw new Error('Invalid image dimensions');
+
+  // === Step 1: Build the heavily-blurred base layer at FULL resolution ===
+  // Previous version downscaled to 18% then upscaled — that produced visible
+  // pixelation/stretching on the blurred edges. Modern browsers blur at full
+  // resolution efficiently via canvas filter, so we use that directly for
+  // a much higher-quality result.
+  const blurCanvas = document.createElement('canvas');
+  blurCanvas.width = w;
+  blurCanvas.height = h;
+  const blurCtx = blurCanvas.getContext('2d');
+  // Scale blur radius with image size for consistent visual softness
+  const blurRadius = Math.max(20, Math.round(Math.min(w, h) * 0.06));
+  blurCtx.filter = `blur(${blurRadius}px) brightness(0.82) saturate(1.08)`;
+  blurCtx.drawImage(img, 0, 0, w, h);
+
+  // === Step 2: Final canvas at full size ===
+  const out = document.createElement('canvas');
+  out.width = w;
+  out.height = h;
+  const ctx = out.getContext('2d');
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+
+  // Draw blurred base at full size (no scaling required = no quality loss)
+  ctx.drawImage(blurCanvas, 0, 0);
+
+  // === Step 3: Build sharp masked layer in a temp canvas, then composite ===
+  // The mask is an elliptical radial gradient: opaque center, fades to transparent.
+  // For most car photos the vehicle sits in the lower-middle of the frame,
+  // so the mask is biased slightly downward (cy = 0.55) for better default framing.
+  const maskCanvas = document.createElement('canvas');
+  maskCanvas.width = w;
+  maskCanvas.height = h;
+  const mctx = maskCanvas.getContext('2d');
+  mctx.imageSmoothingEnabled = true;
+  mctx.imageSmoothingQuality = 'high';
+
+  // Draw original sharp image at full quality (no resampling)
+  mctx.drawImage(img, 0, 0);
+
+  // Apply elliptical radial alpha mask using destination-in
+  const cx = w / 2;
+  const cy = h * 0.55;
+  const radX = w * 0.42;
+  const radY = h * 0.48;
+  const maxR = Math.max(radX, radY);
+
+  mctx.globalCompositeOperation = 'destination-in';
+  mctx.save();
+  mctx.translate(cx, cy);
+  mctx.scale(radX / maxR, radY / maxR);
+  const grad = mctx.createRadialGradient(0, 0, 0, 0, 0, maxR);
+  grad.addColorStop(0.0, 'rgba(0,0,0,1.00)');
+  grad.addColorStop(0.55, 'rgba(0,0,0,1.00)');
+  grad.addColorStop(0.80, 'rgba(0,0,0,0.70)');
+  grad.addColorStop(0.95, 'rgba(0,0,0,0.20)');
+  grad.addColorStop(1.00, 'rgba(0,0,0,0.00)');
+  mctx.fillStyle = grad;
+  mctx.fillRect(-maxR * 1.5, -maxR * 1.5, maxR * 3, maxR * 3);
+  mctx.restore();
+
+  // === Step 4: Composite masked sharp layer onto blurred base ===
+  ctx.drawImage(maskCanvas, 0, 0);
+
+  return out.toDataURL('image/jpeg', 0.95);
+}
+
+async function applyParsedData(data) {
+  if (data.make) els.make.value = data.make;
+  if (data.model) els.model.value = data.model;
+  if (data.year) els.year.value = data.year;
+  if (data.mileage) els.mileage.value = data.mileage;
+  if (data.fuel) els.fuel.value = data.fuel;
+  if (data.transmission) els.transmission.value = data.transmission;
+  if (data.currency) els.currency.value = data.currency;
+  if (data.price) els.price.value = data.price;
+  if (data.location) els.location.value = data.location;
+  if (data.condition) els.condition.value = data.condition;
+  if (data.dealer) els.dealer.value = data.dealer;
+
+  // Call for Price toggle
+  if (data.callForPrice) {
+    els.callForPrice.checked = true;
+  }
+
+  // Images need to be converted to data URLs so they render in html2canvas
+  // Run hero + dealer logo fetches in parallel
+  const imgPromises = [];
+  if (data.imageUrl) {
+    imgPromises.push(urlToDataUrl(data.imageUrl).then(dataUrl => setHeroImage(dataUrl)));
+  }
+  if (data.dealerLogoUrl) {
+    imgPromises.push(urlToDataUrl(data.dealerLogoUrl).then(dataUrl => {
+      State.dealerLogoSrc = dataUrl;
+    }));
+  }
+  await Promise.all(imgPromises);
+  render();
+}
+
+els.fetchBtn.addEventListener('click', () => {
+  const url = els.fetchUrl.value.trim();
+  if (!url) {
+    showFetchStatus('Paste a URL first.', 'error');
+    return;
+  }
+  if (!url.includes('arabwheels.ae')) {
+    showFetchStatus('URL must be an arabwheels.ae listing.', 'error');
+    return;
+  }
+  fetchListing(url);
+});
+
+els.fetchUrl.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    els.fetchBtn.click();
+  }
+});
+
+/* ============================================================================
+   DOWNLOAD
+   ============================================================================ */
+function showToast(text, isError) {
+  els.toastText.textContent = text;
+  els.toast.classList.toggle('error', !!isError);
+  els.toast.classList.add('show');
+  setTimeout(() => els.toast.classList.remove('show'), 2400);
+}
+
+async function captureCard(formatKey) {
+  const fmt = FORMATS[formatKey];
+  // hide all wrappers except the target
+  const wrappers = Object.keys(FORMATS).map(k => document.getElementById(FORMATS[k].id));
+  const previousVisibility = wrappers.map(w => w.classList.contains('hidden'));
+  wrappers.forEach(w => w.classList.add('hidden'));
+  const target = document.getElementById(fmt.id);
+  target.classList.remove('hidden');
+
+  document.body.classList.add('capturing');
+  // wait a frame for layout
+  await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+  const card = document.getElementById(fmt.card);
+  const canvas = await html2canvas(card, {
+    width: fmt.w,
+    height: fmt.h,
+    scale: 2,
+    useCORS: true,
+    allowTaint: true,
+    backgroundColor: '#ffffff',
+    logging: false,
+  });
+
+  document.body.classList.remove('capturing');
+  // restore visibility
+  wrappers.forEach((w, i) => w.classList.toggle('hidden', previousVisibility[i]));
+
+  return canvas;
+}
+
+function downloadCanvas(canvas, filename) {
+  return new Promise(res => {
+    canvas.toBlob(blob => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 300);
+      res();
+    }, 'image/png');
+  });
+}
+
+function buildFilename(formatKey) {
+  const fmt = FORMATS[formatKey];
+  const make = (els.make.value || 'vehicle').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  const model = (els.model.value || '').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  return `arabwheels-${fmt.name}-${make}-${model}-${Date.now()}.png`;
+}
+
+els.downloadBtn.addEventListener('click', async () => {
+  const btn = els.downloadBtn;
+  btn.disabled = true;
+  const original = btn.innerHTML;
+  btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><circle cx="12" cy="12" r="10"/></svg> Generating…';
+
+  try {
+    const canvas = await captureCard(State.currentFormat);
+    await downloadCanvas(canvas, buildFilename(State.currentFormat));
+    showToast('Image downloaded — ready to post');
+  } catch (err) {
+    console.error(err);
+    document.body.classList.remove('capturing');
+    showToast('Download failed', true);
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = original;
+});
+
+// Helper: convert canvas → Blob (Promise wrapper around toBlob)
+function canvasToBlob(canvas, type, quality) {
+  return new Promise((res, rej) => {
+    canvas.toBlob(blob => blob ? res(blob) : rej(new Error('toBlob returned null')), type || 'image/png', quality);
+  });
+}
+
+els.downloadAllBtn.addEventListener('click', async () => {
+  const btn = els.downloadAllBtn;
+  btn.disabled = true;
+  const original = btn.innerHTML;
+  const formats = ['portrait', 'fbPortrait', 'square', 'landscape'];
+
+  try {
+    if (typeof JSZip === 'undefined') {
+      throw new Error('JSZip not loaded — check internet connection');
+    }
+    const zip = new JSZip();
+
+    // Generate all 4 PNGs sequentially and add to ZIP
+    for (let i = 0; i < formats.length; i++) {
+      const k = formats[i];
+      btn.innerHTML = `Generating ${i+1}/${formats.length}…`;
+      const canvas = await captureCard(k);
+      const blob = await canvasToBlob(canvas, 'image/png');
+      zip.file(buildFilename(k), blob);
+    }
+
+    btn.innerHTML = 'Packaging ZIP…';
+    const zipBlob = await zip.generateAsync({
+      type: 'blob',
+      compression: 'STORE', // PNGs are already compressed; STORE skips re-compression for speed
+    });
+
+    // Single download — no browser "multiple downloads" prompt
+    const make = (els.make.value || 'vehicle').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    const model = (els.model.value || '').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    const zipName = `arabwheels-${make}-${model}-all-formats-${Date.now()}.zip`;
+    const url = URL.createObjectURL(zipBlob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = zipName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 500);
+
+    showToast(`All ${formats.length} formats downloaded as ZIP`);
+  } catch (err) {
+    console.error(err);
+    document.body.classList.remove('capturing');
+    showToast(`Download failed: ${err.message}`, true);
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = original;
+});
+
+/* ============================================================================
+   INIT
+   ============================================================================ */
+applyFonts();
+applyAccent('#0091D8');
+render();
+</script>
+
+</body>
+</html>
