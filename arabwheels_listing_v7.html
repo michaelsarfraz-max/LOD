@@ -35,6 +35,12 @@
   --line: #E5E8EE;
   --white: #FFFFFF;
 
+  /* TAG (Promotional Tag) — JS-controlled, independent of accent */
+  --tag-light: #FF5764;
+  --tag-mid: #E60012;
+  --tag-dark: #A6000D;
+  --tag-gradient: linear-gradient(135deg, var(--tag-light) 0%, var(--tag-mid) 50%, var(--tag-dark) 100%);
+
   /* EDITOR */
   --editor-bg: #F4F6FA;
   --editor-border: #E1E5EC;
@@ -430,18 +436,42 @@ body {
   z-index: 0;
 }
 
+.hero.has-bg .hero-bg,
 .hero.blurred .hero-bg { display: block; }
-.hero.blurred .hero-img { object-fit: contain; z-index: 1; position: relative; }
+
 
 .hero-img {
   width: 100%; height: 100%;
-  object-fit: cover; display: block;
+  display: block;
   position: relative;
   z-index: 1;
+  background-color: var(--aw-gray); /* fallback flat gray when no vignette is generated yet */
+  /* When src is set via JS as background-image, contain ensures no stretch/crop */
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
   /* Tell the browser to use highest-quality scaling */
   image-rendering: -webkit-optimize-contrast;
   image-rendering: high-quality;
 }
+
+/* When vignette bg is available, make hero-img transparent so the soft-blurred
+   extension fills the letterbox area instead of flat gray bars. */
+.hero.has-bg .hero-img { background-color: transparent; }
+
+/* Subtle inner shadow on the hero so the photo feels "framed" — applies in both modes. */
+.hero::before {
+  content: '';
+  position: absolute; inset: 0;
+  box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.12);
+  pointer-events: none;
+  z-index: 4;
+}
+
+/* When vignette mode is ON: hide foreground img since the vignette image already
+   has a sharp center built in (via the canvas radial mask). */
+.hero.blurred .hero-img { display: none; }
+.hero.blurred .hero-bg { display: block; }
 
 .hero::after {
   content: '';
@@ -454,7 +484,7 @@ body {
 /* CONDITION TAG */
 .condition-tag {
   position: absolute;
-  background: var(--accent-gradient);
+  background: var(--tag-gradient, var(--accent-gradient));
   color: white;
   font-weight: 800;
   text-transform: uppercase;
@@ -463,6 +493,21 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  /* Size multiplier set per .tag-size-* class — applied via transform-scale on inner padding/font */
+}
+
+/* Tag size scaler — multiplies font-size + padding via CSS variable */
+.condition-tag { --tag-scale: 1; }
+.tag-size-sm .condition-tag { --tag-scale: 0.75; }
+.tag-size-md .condition-tag { --tag-scale: 1; }
+.tag-size-lg .condition-tag { --tag-scale: 1.35; }
+.tag-size-xl .condition-tag { --tag-scale: 1.75; }
+.tag-size-sm .condition-tag,
+.tag-size-md .condition-tag,
+.tag-size-lg .condition-tag,
+.tag-size-xl .condition-tag {
+  transform: scale(var(--tag-scale));
+  transform-origin: top left;
 }
 
 /* DEALER BADGE */
@@ -479,22 +524,49 @@ body {
 }
 
 .dealer-badge .dealer-logo-img {
-  border-radius: 50%;
+  border-radius: 8px;
   background: white;
   object-fit: contain;
   padding: 4px;
   flex-shrink: 0;
-  border: 2px solid white;
+  border: 1px solid rgba(0,0,0,0.08);
+  transition: width 0.15s, height 0.15s;
 }
+
+/* === Transparent logo background option === */
+/* When body has logo-bg-transparent, drop the white card and let the logo float */
+.logo-bg-transparent .dealer-badge .dealer-logo-img {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  border-radius: 4px;
+  /* Keep a subtle drop shadow so the logo doesn't disappear into busy backgrounds */
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
+}
+/* Also remove the white badge background when transparent + logo-only */
+.logo-bg-transparent .dealer-badge.logo-only {
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  padding: 0 !important;
+}
+
+/* === Logo Size scaling (sm/md/lg) — applies as a multiplier on width+height === */
+.logo-size-sm .dealer-badge .dealer-logo-img,
+.logo-size-sm .dealer-badge.logo-only .dealer-logo-img { transform: scale(0.78); transform-origin: center; }
+.logo-size-md .dealer-badge .dealer-logo-img,
+.logo-size-md .dealer-badge.logo-only .dealer-logo-img { transform: scale(1); }
+.logo-size-lg .dealer-badge .dealer-logo-img,
+.logo-size-lg .dealer-badge.logo-only .dealer-logo-img { transform: scale(1.25); transform-origin: center; }
 
 /* Logo-only mode: hide name span and SHOW BIGGER LOGO */
 .dealer-badge.logo-only .out-dealer-name { display: none; }
-.dealer-badge.logo-only { padding: 6px !important; gap: 0 !important; }
-/* Per-format logo-only sizes — much larger than the small "with name" sizes */
-.card-portrait    .dealer-badge.logo-only .dealer-logo-img { width: 100px; height: 100px; }
-.card-fb-portrait .dealer-badge.logo-only .dealer-logo-img { width: 120px; height: 120px; }
-.card-square      .dealer-badge.logo-only .dealer-logo-img { width: 92px;  height: 92px; }
-.card-landscape   .dealer-badge.logo-only .dealer-logo-img { width: 78px;  height: 78px; }
+.dealer-badge.logo-only { padding: 4px !important; gap: 0 !important; border-radius: 14px; }
+/* Per-format logo-only sizes — wider rectangular cards (logos are typically wider than tall) */
+.card-portrait    .dealer-badge.logo-only .dealer-logo-img { width: 160px; height: 100px; padding: 8px; border-radius: 12px; }
+.card-fb-portrait .dealer-badge.logo-only .dealer-logo-img { width: 200px; height: 120px; padding: 10px; border-radius: 14px; }
+.card-square      .dealer-badge.logo-only .dealer-logo-img { width: 150px; height: 92px;  padding: 8px; border-radius: 12px; }
+.card-landscape   .dealer-badge.logo-only .dealer-logo-img { width: 130px; height: 78px;  padding: 7px; border-radius: 10px; }
 
 .dealer-badge.no-logo::before {
   content: '';
@@ -684,14 +756,14 @@ body {
 }
 .card-portrait .dealer-badge {
   bottom: 28px; right: 28px;
-  padding: 12px 22px 12px 12px;
-  border-radius: 100px;
+  padding: 6px 20px 6px 6px;
+  border-radius: 14px;
   font-size: 22px;
   gap: 14px;
 }
-.card-portrait .dealer-badge.no-logo { padding-left: 22px; gap: 12px; }
+.card-portrait .dealer-badge.no-logo { padding: 12px 22px; border-radius: 100px; gap: 12px; }
 .card-portrait .dealer-badge.no-logo::before { width: 10px; height: 10px; }
-.card-portrait .dealer-badge .dealer-logo-img { width: 60px; height: 60px; }
+.card-portrait .dealer-badge .dealer-logo-img { width: 90px; height: 56px; }
 
 .card-portrait .info {
   padding: 32px 56px 18px;
@@ -768,14 +840,14 @@ body {
 }
 .card-fb-portrait .dealer-badge {
   bottom: 32px; right: 32px;
-  padding: 14px 26px 14px 14px;
-  border-radius: 100px;
+  padding: 7px 24px 7px 7px;
+  border-radius: 16px;
   font-size: 24px;
   gap: 16px;
 }
-.card-fb-portrait .dealer-badge.no-logo { padding-left: 26px; gap: 14px; }
+.card-fb-portrait .dealer-badge.no-logo { padding: 14px 26px; border-radius: 100px; gap: 14px; }
 .card-fb-portrait .dealer-badge.no-logo::before { width: 11px; height: 11px; }
-.card-fb-portrait .dealer-badge .dealer-logo-img { width: 68px; height: 68px; }
+.card-fb-portrait .dealer-badge .dealer-logo-img { width: 105px; height: 64px; }
 
 .card-fb-portrait .info {
   padding: 36px 60px 22px;
@@ -853,14 +925,14 @@ body {
 }
 .card-square .dealer-badge {
   bottom: 26px; right: 26px;
-  padding: 11px 20px 11px 11px;
-  border-radius: 100px;
+  padding: 6px 20px 6px 6px;
+  border-radius: 12px;
   font-size: 20px;
   gap: 12px;
 }
-.card-square .dealer-badge.no-logo { padding-left: 20px; gap: 10px; }
+.card-square .dealer-badge.no-logo { padding: 11px 20px; border-radius: 100px; gap: 10px; }
 .card-square .dealer-badge.no-logo::before { width: 9px; height: 9px; }
-.card-square .dealer-badge .dealer-logo-img { width: 54px; height: 54px; }
+.card-square .dealer-badge .dealer-logo-img { width: 80px; height: 50px; }
 
 .card-square .info {
   padding: 22px 48px 14px;
@@ -954,14 +1026,14 @@ body {
 }
 .card-landscape .dealer-badge {
   bottom: 20px; right: 20px;
-  padding: 9px 18px 9px 9px;
-  border-radius: 100px;
+  padding: 5px 18px 5px 5px;
+  border-radius: 10px;
   font-size: 17px;
   gap: 11px;
 }
-.card-landscape .dealer-badge.no-logo { padding-left: 18px; gap: 9px; }
+.card-landscape .dealer-badge.no-logo { padding: 9px 18px; border-radius: 100px; gap: 9px; }
 .card-landscape .dealer-badge.no-logo::before { width: 7px; height: 7px; }
-.card-landscape .dealer-badge .dealer-logo-img { width: 44px; height: 44px; }
+.card-landscape .dealer-badge .dealer-logo-img { width: 68px; height: 42px; }
 
 .card-landscape .info-stack {
   padding: 22px 28px 22px 32px;
@@ -1093,7 +1165,7 @@ body {
     </div>
     <div>
       <h1>Listing Post Generator</h1>
-      <div class="subtitle">ArabWheels • v7 • Engine-table parser · Assembly fetched · HQ vignette
+      <div class="subtitle">ArabWheels • v10 • Soft-fill frame · Logo background option · Logo size
     </div>
   </div>
   <div class="app-actions">
@@ -1264,6 +1336,20 @@ body {
           <option>STAFF PICK</option>
         </select>
       </div>
+      <div class="field"><label>Tag Color</label>
+        <div class="hex-row">
+          <input type="text" id="tagHex" value="#E60012" maxlength="7" placeholder="#E60012">
+          <input type="color" id="tagColor" value="#E60012" title="Pick tag color">
+        </div>
+      </div>
+      <div class="field"><label>Tag Size</label>
+        <select id="tagSize">
+          <option value="sm">Small</option>
+          <option value="md" selected>Medium (default)</option>
+          <option value="lg">Large</option>
+          <option value="xl">Extra Large</option>
+        </select>
+      </div>
     </div>
 
     <!-- DEALER -->
@@ -1279,6 +1365,21 @@ body {
           <option value="logo">Logo only</option>
           <option value="name">Name only</option>
         </select>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Logo Background</label>
+          <select id="logoBg">
+            <option value="white">White card</option>
+            <option value="transparent">Transparent (no background)</option>
+          </select>
+        </div>
+        <div class="field"><label>Logo Size</label>
+          <select id="logoSize">
+            <option value="sm">Small</option>
+            <option value="md" selected>Medium</option>
+            <option value="lg">Large</option>
+          </select>
+        </div>
       </div>
       <div class="field"><label>Dealer Name</label><input type="text" id="dealer" value="Mouatir Trading" maxlength="30"></div>
       <div class="field">
@@ -1338,8 +1439,7 @@ body {
           <div class="hero out-hero">
             <div class="hero-bg out-hero-bg"></div>
             <div class="condition-tag out-condition" style="display:none">HOT DEAL</div>
-            <img class="hero-img out-hero-img" alt="Vehicle"
-              src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1080 740'><rect width='1080' height='740' fill='%23F0F0F0'/><text x='540' y='380' font-family='Manrope,sans-serif' font-size='32' fill='%2398A2B3' text-anchor='middle' font-weight='600'>Upload a vehicle photo</text></svg>">
+            <div class="hero-img out-hero-img" role="img" aria-label="Vehicle"></div>
             <div class="dealer-badge out-dealer no-logo">
               <span class="out-dealer-name">Mouatir Trading</span>
             </div>
@@ -1460,8 +1560,7 @@ body {
           <div class="hero out-hero">
             <div class="hero-bg out-hero-bg"></div>
             <div class="condition-tag out-condition" style="display:none">HOT DEAL</div>
-            <img class="hero-img out-hero-img" alt="Vehicle"
-              src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1080 940'><rect width='1080' height='940' fill='%23F0F0F0'/><text x='540' y='480' font-family='Manrope,sans-serif' font-size='34' fill='%2398A2B3' text-anchor='middle' font-weight='600'>Upload a vehicle photo</text></svg>">
+            <div class="hero-img out-hero-img" role="img" aria-label="Vehicle"></div>
             <div class="dealer-badge out-dealer no-logo">
               <span class="out-dealer-name">Mouatir Trading</span>
             </div>
@@ -1552,8 +1651,7 @@ body {
           <div class="hero out-hero">
             <div class="hero-bg out-hero-bg"></div>
             <div class="condition-tag out-condition" style="display:none">HOT DEAL</div>
-            <img class="hero-img out-hero-img" alt="Vehicle"
-              src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1080 530'><rect width='1080' height='530' fill='%23F0F0F0'/><text x='540' y='275' font-family='Manrope,sans-serif' font-size='32' fill='%2398A2B3' text-anchor='middle' font-weight='600'>Upload a vehicle photo</text></svg>">
+            <div class="hero-img out-hero-img" role="img" aria-label="Vehicle"></div>
             <div class="dealer-badge out-dealer no-logo">
               <span class="out-dealer-name">Mouatir Trading</span>
             </div>
@@ -1645,8 +1743,7 @@ body {
             <div class="hero out-hero">
               <div class="hero-bg out-hero-bg"></div>
               <div class="condition-tag out-condition" style="display:none">HOT DEAL</div>
-              <img class="hero-img out-hero-img" alt="Vehicle"
-                src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 700 510'><rect width='700' height='510' fill='%23F0F0F0'/><text x='350' y='265' font-family='Manrope,sans-serif' font-size='28' fill='%2398A2B3' text-anchor='middle' font-weight='600'>Upload a vehicle photo</text></svg>">
+              <div class="hero-img out-hero-img" role="img" aria-label="Vehicle"></div>
               <div class="dealer-badge out-dealer no-logo">
                 <span class="out-dealer-name">Mouatir Trading</span>
               </div>
@@ -1757,6 +1854,9 @@ const els = {
   fetchStatus: document.getElementById('fetchStatus'),
   accentColor: document.getElementById('accentColor'),
   accentHex: document.getElementById('accentHex'),
+  tagColor: document.getElementById('tagColor'),
+  tagHex: document.getElementById('tagHex'),
+  tagSize: document.getElementById('tagSize'),
   fontBody: document.getElementById('fontBody'),
   fontDisplay: document.getElementById('fontDisplay'),
   imageUrl: document.getElementById('imageUrl'),
@@ -1778,6 +1878,8 @@ const els = {
   showAssembly: document.getElementById('showAssembly'),
   dealer: document.getElementById('dealer'),
   dealerMode: document.getElementById('dealerMode'),
+  logoBg: document.getElementById('logoBg'),
+  logoSize: document.getElementById('logoSize'),
   showDealer: document.getElementById('showDealer'),
   dealerLogoInput: document.getElementById('dealerLogoInput'),
   dealerDrop: document.getElementById('dealerDrop'),
@@ -1876,6 +1978,65 @@ els.fontBody.addEventListener('change', applyFonts);
 els.fontDisplay.addEventListener('change', applyFonts);
 
 /* ============================================================================
+   PROMOTIONAL TAG COLOR + SIZE
+   ============================================================================ */
+function applyTagColor(hex) {
+  const root = document.documentElement;
+  const light = adjustColor(hex, 40);
+  const dark = adjustColor(hex, -50);
+  root.style.setProperty('--tag-light', light);
+  root.style.setProperty('--tag-mid', hex);
+  root.style.setProperty('--tag-dark', dark);
+  root.style.setProperty('--tag-gradient',
+    `linear-gradient(135deg, ${light} 0%, ${hex} 50%, ${dark} 100%)`);
+}
+
+function setTagColor(hex, sourceEl) {
+  if (!isValidHex(hex)) return;
+  if (sourceEl !== els.tagHex) els.tagHex.value = hex.toUpperCase();
+  if (sourceEl !== els.tagColor) els.tagColor.value = hex;
+  applyTagColor(hex);
+}
+
+els.tagColor.addEventListener('input', e => setTagColor(e.target.value, els.tagColor));
+els.tagHex.addEventListener('input', e => {
+  let v = e.target.value.trim();
+  if (v && !v.startsWith('#')) v = '#' + v;
+  if (isValidHex(v)) setTagColor(v, els.tagHex);
+});
+els.tagHex.addEventListener('blur', e => {
+  let v = e.target.value.trim().toUpperCase();
+  if (v && !v.startsWith('#')) v = '#' + v;
+  if (isValidHex(v)) {
+    e.target.value = v;
+    setTagColor(v, els.tagHex);
+  } else {
+    e.target.value = els.tagColor.value.toUpperCase();
+  }
+});
+
+function applyTagSize() {
+  // Add tag-size-{sm|md|lg|xl} class on body, removing any existing
+  document.body.classList.remove('tag-size-sm', 'tag-size-md', 'tag-size-lg', 'tag-size-xl');
+  document.body.classList.add('tag-size-' + els.tagSize.value);
+}
+els.tagSize.addEventListener('change', applyTagSize);
+
+/* ============================================================================
+   DEALER LOGO — background style + size
+   ============================================================================ */
+function applyLogoBg() {
+  document.body.classList.remove('logo-bg-white', 'logo-bg-transparent');
+  document.body.classList.add('logo-bg-' + els.logoBg.value);
+}
+function applyLogoSize() {
+  document.body.classList.remove('logo-size-sm', 'logo-size-md', 'logo-size-lg');
+  document.body.classList.add('logo-size-' + els.logoSize.value);
+}
+els.logoBg.addEventListener('change', applyLogoBg);
+els.logoSize.addEventListener('change', applyLogoSize);
+
+/* ============================================================================
    RENDER (updates all 3 cards from form state)
    ============================================================================ */
 function setText(cls, text) {
@@ -1972,18 +2133,42 @@ function render() {
     }
   });
 
-  // === HERO IMAGE: vignette mode swaps the image source ===
+  // === HERO IMAGE: layered rendering ===
+  // The hero has two stacked layers:
+  //   .hero-bg  — vignette image (blurred edges + sharp center) shown via background-cover
+  //   .hero-img — sharp source image with background-contain (no crop/stretch)
+  //
+  // When the source aspect ratio doesn't match the frame (portrait photo in landscape frame
+  // and vice versa), the foreground "contain" leaves letterbox area on sides/top/bottom.
+  // The vignette bg fills that letterbox area with a soft blurred extension so the photo
+  // looks framed neatly instead of having flat gray bars.
+  //
+  // Blur toggle ON: hide the sharp foreground entirely so the vignette's radial-masked
+  // sharp center becomes the focal point (full-frame artistic look).
   const blurOn = els.blurBg.checked;
   if (State.heroSrc) {
-    const heroSrc = (blurOn && State.heroVignetteSrc) ? State.heroVignetteSrc : State.heroSrc;
-    document.querySelectorAll('.out-hero-img').forEach(img => {
-      // only update if changed (avoid reload flashing)
-      if (img.src !== heroSrc) img.src = heroSrc;
+    const heroBgUrl = `url("${State.heroSrc}")`;
+    document.querySelectorAll('.out-hero-img').forEach(div => {
+      if (div.style.backgroundImage !== heroBgUrl) {
+        div.style.backgroundImage = heroBgUrl;
+      }
     });
-    // The hero-bg layer is no longer used in vignette mode (the composite image IS the layer)
-    // but we keep it as a safety net for cases where vignette generation failed
-    document.querySelectorAll('.out-hero-bg').forEach(bg => bg.style.backgroundImage = '');
-    document.querySelectorAll('.out-hero').forEach(hero => hero.classList.remove('blurred'));
+
+    // Always show the vignette bg layer when available — it fills letterbox area neatly.
+    if (State.heroVignetteSrc) {
+      document.querySelectorAll('.out-hero-bg').forEach(bg => {
+        bg.style.backgroundImage = `url("${State.heroVignetteSrc}")`;
+      });
+      document.querySelectorAll('.out-hero').forEach(hero => {
+        hero.classList.add('has-bg');
+        hero.classList.toggle('blurred', blurOn);
+      });
+    } else {
+      document.querySelectorAll('.out-hero-bg').forEach(bg => bg.style.backgroundImage = '');
+      document.querySelectorAll('.out-hero').forEach(hero => {
+        hero.classList.remove('has-bg', 'blurred');
+      });
+    }
   }
 }
 
@@ -1994,15 +2179,8 @@ async function setHeroImage(src) {
   State.heroSrc = src;
   State.heroVignetteSrc = null;
 
-  // Show original immediately
-  document.querySelectorAll('.out-hero-img').forEach(img => {
-    img.crossOrigin = 'anonymous';
-    img.src = src;
-    img.onerror = () => {
-      img.crossOrigin = null;
-      img.src = src;
-    };
-  });
+  // Render immediately so the source shows up on screen (sets background-image on the .hero-img divs)
+  render();
 
   // Generate the vignette composite (sharp center + blurred edges) in background
   try {
@@ -2353,13 +2531,34 @@ function parseArabWheels(doc) {
     data.model = split.model;
   }
 
-  // === PRICE — try multiple strategies, pick the largest plausible value ===
+  // === PRICE — try multiple strategies in priority order ===
   // 1. Check for "Call for Price" / "Price on Request" markers first
   if (/Call\s*for\s*Price|Price\s*on\s*Request|POA\b/i.test(text)) {
     data.callForPrice = true;
   }
 
-  // 2. Try JSON-LD (most reliable when present)
+  // 2. PRIMARY: ArabWheels' actual price box uses `.price-box strong.generic-green` (e.g. "AED 615,000")
+  //    This is the most reliable selector — exactly where ArabWheels puts the listed price in its sidebar.
+  let priceFromAW = null;
+  let currencyFromAW = null;
+  const awPriceEl = doc.querySelector('.price-box strong.generic-green, .price-box strong, .price-well .generic-green');
+  if (awPriceEl) {
+    const awText = (awPriceEl.textContent || '').trim();
+    const m = awText.match(/(AED|SAR)\s*([\d,]+(?:\.\d+)?)/i);
+    if (m) {
+      const num = parseInt(m[2].replace(/[,]/g, ''), 10);
+      if (num >= 100 && num <= 100000000) {
+        priceFromAW = num;
+        currencyFromAW = m[1].toUpperCase();
+      }
+    }
+  }
+  if (priceFromAW) {
+    data.price = String(priceFromAW);
+    data.currency = currencyFromAW;
+  } else {
+
+  // 3. Try JSON-LD (most reliable when present)
   let priceFromJsonLd = null;
   let currencyFromJsonLd = null;
   doc.querySelectorAll('script[type="application/ld+json"]').forEach(script => {
@@ -2390,24 +2589,69 @@ function parseArabWheels(doc) {
     else if (/\bAED\b/.test(text)) data.currency = 'AED';
     else if (/\bSAR\b/.test(text)) data.currency = 'SAR';
   } else if (!data.callForPrice) {
-    // 3. Fallback: regex scan — find ALL "AED|SAR <number>" matches and pick the LARGEST
-    // (Avoids picking "AED 9,750/month" loan figures over "AED 975,000" actual price)
-    const allPrices = [];
-    const re = /(AED|SAR)\s*([\d][\d,\.]{0,15})/gi;
-    let m;
-    while ((m = re.exec(text)) !== null) {
-      const num = parseInt(m[2].replace(/[,\.]/g, ''), 10);
-      if (num >= 1000 && num <= 100000000) {
-        allPrices.push({ currency: m[1].toUpperCase(), price: num });
+    // 4. PREFERRED: look for an "AED <num>" inside a strong/b/h1/h2/h3 tag (the listing title price block)
+    // The Toyota Yaris example shows: <strong>AED 41,299</strong> — that's the actual listed price.
+    // Similar-ads section uses plain divs/spans, so strong/b is a strong signal.
+    let priceFromStrong = null;
+    let currencyFromStrong = null;
+    const priceTagSelectors = ['strong', 'b', '.price', '[class*="price"]', '[id*="price"]', 'h1', 'h2', 'h3'];
+    for (const sel of priceTagSelectors) {
+      doc.querySelectorAll(sel).forEach(el => {
+        if (priceFromStrong) return; // first match per selector wins
+        const t = (el.textContent || '').trim();
+        // Skip if inside a similar-ads container (heuristic: ancestor class contains 'similar' or 'related')
+        let p = el.parentElement;
+        let inSimilar = false;
+        while (p) {
+          const cls = (p.className || '').toString().toLowerCase();
+          const id = (p.id || '').toLowerCase();
+          if (/similar|related|recommended|other-ads/.test(cls) || /similar|related/.test(id)) {
+            inSimilar = true; break;
+          }
+          p = p.parentElement;
+        }
+        if (inSimilar) return;
+        // Match short text like "AED 41,299" (not loan quotes which usually contain "/month" or "EMI")
+        if (/\/(month|day|year)|EMI|installment/i.test(t)) return;
+        const m = t.match(/^(?:Price\s*[:\-]?\s*)?(AED|SAR)\s*([\d,]+(?:\.\d+)?)\s*$/i);
+        if (m) {
+          const num = parseInt(m[2].replace(/[,]/g, ''), 10);
+          if (num >= 1000 && num <= 100000000) {
+            priceFromStrong = num;
+            currencyFromStrong = m[1].toUpperCase();
+          }
+        }
+      });
+      if (priceFromStrong) break;
+    }
+    if (priceFromStrong) {
+      data.price = String(priceFromStrong);
+      data.currency = currencyFromStrong;
+    } else {
+      // 5. Last resort fallback: regex scan ALL "AED|SAR <number>" matches and pick the most-frequent
+      // (Most common price across the page is usually the actual listing — it appears in title, share dialog, "Reduce Price" modal etc.)
+      const counts = {};
+      const re = /(AED|SAR)\s*([\d][\d,\.]{0,15})/gi;
+      let m;
+      while ((m = re.exec(text)) !== null) {
+        const num = parseInt(m[2].replace(/[,\.]/g, ''), 10);
+        if (num >= 1000 && num <= 100000000) {
+          const key = m[1].toUpperCase() + ':' + num;
+          counts[key] = (counts[key] || 0) + 1;
+        }
+      }
+      const entries = Object.entries(counts);
+      if (entries.length > 0) {
+        // Sort by frequency descending, tie-break by appearing more times in the listing
+        entries.sort((a, b) => b[1] - a[1]);
+        const winner = entries[0][0];
+        const [cur, num] = winner.split(':');
+        data.currency = cur;
+        data.price = num;
       }
     }
-    if (allPrices.length > 0) {
-      // pick the largest — actual sale price almost always exceeds loan/EMI quotes
-      allPrices.sort((a, b) => b.price - a.price);
-      data.currency = allPrices[0].currency;
-      data.price = String(allPrices[0].price);
-    }
   }
+  } // end of fallback block when .price-box wasn't found
 
   // === GENERIC LABEL-VALUE EXTRACTOR ===
   // ArabWheels listing pages use various structures (li/span pairs, table rows, dt/dd, etc).
@@ -2489,12 +2733,24 @@ function parseArabWheels(doc) {
   }
 
   // === LOCATION ===
-  // breadcrumb pattern or h1 "for sale in X"
-  const cityMatch = (h1 ? h1.textContent : '').match(/for sale in\s+([A-Za-z\s]+?)(?:\s*[-–]|\s*$)/i);
-  if (cityMatch) {
-    data.location = cityMatch[1].trim() + ', UAE';
-  } else {
-    // try to find a location indicator from breadcrumbs
+  // Strategy 1: ArabWheels uses <p class="detail-sub-heading"> with city link
+  // <p class="detail-sub-heading"><a><i class="fa-map-marker"></i> Dubai</a></p>
+  const subHeading = doc.querySelector('.detail-sub-heading, p.detail-sub-heading');
+  if (subHeading) {
+    const cityFromSub = subHeading.textContent.trim().replace(/\s+/g, ' ');
+    if (cityFromSub && cityFromSub.length < 60) {
+      data.location = cityFromSub + ', UAE';
+    }
+  }
+
+  // Strategy 2: h1 "for sale in X" pattern (older/alternative listing pages)
+  if (!data.location && h1) {
+    const cityMatch = h1.textContent.match(/for sale in\s+([A-Za-z\s]+?)(?:\s*[-–]|\s*$)/i);
+    if (cityMatch) data.location = cityMatch[1].trim() + ', UAE';
+  }
+
+  // Strategy 3: breadcrumb URL pattern
+  if (!data.location) {
     const breadCrumb = Array.from(doc.querySelectorAll('a'))
       .find(a => /\/used-cars\/(abu-dhabi|ajman|al-ain|dubai|fujairah|ras-al-khaimah|sharjah|umm-al-quwain)\//i.test(a.href));
     if (breadCrumb) {
@@ -2507,44 +2763,110 @@ function parseArabWheels(doc) {
   }
 
   // === HERO IMAGE ===
-  const heroImg = Array.from(doc.querySelectorAll('img'))
-    .find(img => {
-      const s = getImgSrc(img);
-      return s.includes('ad_pictures') && !s.startsWith('data:');
-    });
-  if (heroImg) {
-    let src = getImgSrc(heroImg);
-    // ensure absolute
-    if (src.startsWith('//')) src = 'https:' + src;
-    else if (src.startsWith('/')) src = 'https://www.arabwheels.ae' + src;
-    data.imageUrl = src;
+  // ArabWheels gallery uses lightSlider with lazy loading.
+  // First slide (li.lslide.active or first .lslide) holds the primary image.
+  // Real URL is in `data-src` or `data-original` (the `src` is often a 1x1 base64 placeholder).
+  // We pick the FIRST full-size ad_pictures URL we find, skipping thumbnails (`tn_` prefix).
+  let heroSrc = null;
+  // 1. Look for the first .lslide (gallery slide) and prefer its data-src
+  const firstSlide = doc.querySelector('li.lslide, .light-gallery li');
+  if (firstSlide) {
+    const candidate = firstSlide.getAttribute('data-src')
+                   || firstSlide.querySelector('img')?.getAttribute('data-original')
+                   || firstSlide.querySelector('img')?.getAttribute('src');
+    if (candidate && candidate.includes('ad_pictures') && !candidate.startsWith('data:') && !candidate.includes('/tn_')) {
+      heroSrc = candidate;
+    }
+  }
+  // 2. Fallback: any img / data-src URL with /ad_pictures/ but NOT /tn_ thumbnails
+  if (!heroSrc) {
+    const all = Array.from(doc.querySelectorAll('img, [data-src]'));
+    for (const el of all) {
+      const candidates = [
+        el.getAttribute('data-src'),
+        el.getAttribute('data-original'),
+        el.tagName.toLowerCase() === 'img' ? el.getAttribute('src') : null,
+      ].filter(Boolean);
+      for (const c of candidates) {
+        if (c.includes('ad_pictures') && !c.startsWith('data:') && !c.includes('/tn_')) {
+          heroSrc = c;
+          break;
+        }
+      }
+      if (heroSrc) break;
+    }
+  }
+  if (heroSrc) {
+    if (heroSrc.startsWith('//')) heroSrc = 'https:' + heroSrc;
+    else if (heroSrc.startsWith('/')) heroSrc = 'https://www.arabwheels.ae' + heroSrc;
+    data.imageUrl = heroSrc;
   }
 
   // === DEALER LOGO + NAME ===
-  const dealerImg = Array.from(doc.querySelectorAll('img'))
-    .find(img => {
-      const s = getImgSrc(img);
-      return s.includes('dealerships/dealers') && !s.startsWith('data:');
-    });
-  if (dealerImg) {
-    let src = getImgSrc(dealerImg);
-    if (src.startsWith('//')) src = 'https:' + src;
-    else if (src.startsWith('/')) src = 'https://www.arabwheels.ae' + src;
-    data.dealerLogoUrl = src;
-    // alt text often is the dealer name
-    if (dealerImg.getAttribute('alt')) {
-      data.dealer = dealerImg.getAttribute('alt');
+  // PRIMARY: ArabWheels uses Schema.org AutoDealer markup in the sidebar.
+  // Structure: <div itemtype="http://schema.org/AutoDealer">
+  //              <meta itemprop="image" content="https://cache3.arabwheels.ae/system/dealerships/dealers/.../thumb/N.jpg">
+  //              <div class="dealer-image"><a><img alt="DealerName" src="..."></a></div>
+  //              <label itemprop="name"><a>DealerName</a></label>
+  //            </div>
+  const dealerScope = doc.querySelector('[itemtype*="AutoDealer"]');
+  if (dealerScope) {
+    // Logo: <meta itemprop="image"> content (most reliable) → fallback to img inside .dealer-image
+    const meta = dealerScope.querySelector('meta[itemprop="image"]');
+    if (meta && meta.getAttribute('content')) {
+      let src = meta.getAttribute('content');
+      if (src.startsWith('//')) src = 'https:' + src;
+      else if (src.startsWith('/')) src = 'https://www.arabwheels.ae' + src;
+      data.dealerLogoUrl = src;
+    } else {
+      const dimg = dealerScope.querySelector('.dealer-image img, img');
+      if (dimg) {
+        let src = getImgSrc(dimg);
+        if (src.startsWith('//')) src = 'https:' + src;
+        else if (src.startsWith('/')) src = 'https://www.arabwheels.ae' + src;
+        if (src && !src.startsWith('data:')) data.dealerLogoUrl = src;
+      }
+    }
+    // Name: <label itemprop="name"> text → fallback to alt of dealer-image img
+    const nameEl = dealerScope.querySelector('[itemprop="name"]');
+    if (nameEl && nameEl.textContent.trim()) {
+      // Strip nested "Verified Dealer" tooltip text
+      let name = nameEl.textContent.replace(/Verified\s+Dealer/gi, '').trim();
+      // Cap at 50 chars
+      if (name.length > 0 && name.length < 50) data.dealer = name;
+    } else {
+      const dimg = dealerScope.querySelector('.dealer-image img, img');
+      if (dimg && dimg.getAttribute('alt')) data.dealer = dimg.getAttribute('alt');
     }
   }
 
-  // try a more reliable dealer-name source: link to dealer page
-  const dealerLink = Array.from(doc.querySelectorAll('a'))
-    .find(a => /\/used-cars\/dealers\/[a-z0-9-]+/i.test(a.getAttribute('href') || ''));
-  if (dealerLink && dealerLink.textContent.trim().length > 0 && dealerLink.textContent.trim().length < 50) {
-    const dealerText = dealerLink.textContent.trim();
-    // prefer name-only link text over breadcrumb-like text
-    if (dealerText && !dealerText.includes('more ads') && !dealerText.includes('»')) {
-      data.dealer = dealerText;
+  // Fallback: scan all imgs for /system/dealerships/dealers/ pattern (old logic)
+  if (!data.dealerLogoUrl) {
+    const dealerImg = Array.from(doc.querySelectorAll('img'))
+      .find(img => {
+        const s = getImgSrc(img);
+        return s.includes('dealerships/dealers') && !s.startsWith('data:');
+      });
+    if (dealerImg) {
+      let src = getImgSrc(dealerImg);
+      if (src.startsWith('//')) src = 'https:' + src;
+      else if (src.startsWith('/')) src = 'https://www.arabwheels.ae' + src;
+      data.dealerLogoUrl = src;
+      if (!data.dealer && dealerImg.getAttribute('alt')) {
+        data.dealer = dealerImg.getAttribute('alt');
+      }
+    }
+  }
+
+  // Fallback: dealer page link
+  if (!data.dealer) {
+    const dealerLink = Array.from(doc.querySelectorAll('a'))
+      .find(a => /\/used-cars\/dealers\/[a-z0-9-]+/i.test(a.getAttribute('href') || ''));
+    if (dealerLink && dealerLink.textContent.trim().length > 0 && dealerLink.textContent.trim().length < 50) {
+      const dealerText = dealerLink.textContent.trim();
+      if (dealerText && !dealerText.includes('more ads') && !dealerText.includes('»')) {
+        data.dealer = dealerText;
+      }
     }
   }
 
@@ -2858,6 +3180,10 @@ els.downloadAllBtn.addEventListener('click', async () => {
    ============================================================================ */
 applyFonts();
 applyAccent('#0091D8');
+applyTagColor('#E60012');
+applyTagSize();
+applyLogoBg();
+applyLogoSize();
 render();
 </script>
 
